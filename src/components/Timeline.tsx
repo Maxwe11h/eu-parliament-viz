@@ -1,6 +1,6 @@
 "use client";
 import { HStack, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Text, Box } from '@chakra-ui/react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { useData } from './DataContext';
 import { majoritySocialCategory } from '@/lib/analytics';
 import { categoryPalette } from '@/lib/colors';
@@ -11,7 +11,7 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
     if (!country) return [] as number[];
     const years = (allData[country] || []).map(d=>d.year);
     // Remove duplicates (e.g., Ireland 1982 has two elections)
-    return [...new Set(years)];
+    return [...new Set(years)].filter((y)=> y >= 1950 && y <= 2025);
   },[allData, country]);
   
   const tickData = useMemo(()=>{
@@ -30,60 +30,106 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
   },[allData, country, electionYears]);
 
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const sliderTrackRef = useRef<HTMLDivElement>(null);
+  const [metrics, setMetrics] = useState<{ offsetLeft: number; width: number; offsetTop: number; height: number }>({ offsetLeft: 0, width: 0, offsetTop: 0, height: 0 });
+
+  useLayoutEffect(()=>{
+    function measure(){
+      const container = trackRef.current;
+      const trackEl = sliderTrackRef.current;
+      if (!container || !trackEl) return;
+      const cr = container.getBoundingClientRect();
+      const tr = trackEl.getBoundingClientRect();
+      setMetrics({
+        offsetLeft: tr.left - cr.left,
+        width: tr.width,
+        offsetTop: tr.top - cr.top,
+        height: tr.height,
+      });
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (trackRef.current) ro.observe(trackRef.current);
+    if (sliderTrackRef.current) ro.observe(sliderTrackRef.current);
+    window.addEventListener('resize', measure);
+    return ()=>{ window.removeEventListener('resize', measure); ro.disconnect(); };
+  },[]);
 
   return (
-  <HStack pt={3} pb={1} px={0} border="2px solid" borderColor="black" bg="white" align="center" spacing={3}>
-      <Text fontWeight="medium" pl={3} lineHeight={1}>1950</Text>
-      <Box position="relative" flex={1} height="44px">
-        {/* Clickable pin heads overlay - positioned above SVG */}
+  <HStack pt={2} pb={0} px={0} border="2px solid" borderColor="black" bg="white" align="center" spacing={3} borderRadius="12px" boxShadow="lg" overflow="visible" style={{ height: '54px' }}>
+  <Text fontWeight="medium" pl={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-4px)' }}>1950</Text>
+  <Box position="relative" flex={1} height="38px" ref={trackRef}>
+  {/* Clickable pin heads overlay - positioned above SVG and track */}
         {electionYears.map((y)=>{
           const t = (y-1950)/(2025-1950);
-          const leftPercent = t * 100; // Match slider's exact positioning (0-100%)
+          const leftPx = metrics.offsetLeft + t * metrics.width;
+          const dotTop = metrics.offsetTop + (metrics.height/2) - 18 + 5; // adjusted for shorter height
           const data = tickData.get(y);
           const color = data?.color || '#666';
           return (
             <Box
               key={`pin-${y}`}
               position="absolute"
-              left={`${leftPercent}%`}
-              top="5px"
+              left={`${leftPx}px`}
+              top={`${dotTop}px`}
               width="8px"
               height="8px"
               borderRadius="50%"
+              bg={color}
+              border="1px solid"
+              borderColor="white"
               transform="translate(-50%, -50%)"
               cursor="pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 onChange(y);
               }}
-              onMouseEnter={() => setHoveredYear(y)}
-              onMouseLeave={() => setHoveredYear(null)}
-              zIndex={2}
+              onMouseEnter={() => { setHoveredYear(y); }}
+              onMouseLeave={() => { setHoveredYear(null); }}
+              zIndex={4}
             />
           );
         })}
         {/* Hover tooltip */}
         {hoveredYear !== null && (() => {
           const data = tickData.get(hoveredYear);
+          const containerWidth = trackRef.current?.clientWidth ?? 0;
+          const t = (hoveredYear - 1950) / (2025 - 1950);
+          const pinLeft = metrics.offsetLeft + t * metrics.width;
+          const margin = 8; // px
+          const tooltipWidth = tooltipRef.current?.offsetWidth ?? 260; // fallback guess narrower for two-line
+          const half = tooltipWidth / 2;
+          const clampedCenter = Math.max(half + margin, Math.min(pinLeft, containerWidth - half - margin));
+          // Vertical anchor: always above the pin (use pin dot top minus offset)
+          const pinTop = metrics.offsetTop + (metrics.height/2) - 22 + 5; // same calc used for pin dot placement
+          const verticalOffset = 10; // gap between pin and tooltip
+
+          const baseProps: any = {
+            position: 'absolute',
+            top: `${pinTop - verticalOffset}px`,
+            bg: 'black',
+            color: 'white',
+            px: 4,
+            py: 3,
+            borderRadius: '8px',
+            fontSize: 'sm',
+            zIndex: 10,
+            pointerEvents: 'none',
+            maxW: `${Math.max(220, containerWidth - margin*2)}px`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px'
+          };
+          baseProps.left = `${clampedCenter}px`;
+          baseProps.transform = 'translate(-50%, -100%)';
+
           return (
-            <Box
-              position="absolute"
-              left={`${((hoveredYear-1950)/(2025-1950)) * 100}%`}
-              top="-4px"
-              transform="translate(-50%, -100%)"
-              bg="black"
-              color="white"
-              px={3}
-              py={3}
-              borderRadius="4px"
-              fontSize="sm"
-              whiteSpace="nowrap"
-              zIndex={3}
-              pointerEvents="none"
-            >
-              <div style={{ fontWeight: 'bold' }}>{hoveredYear}</div>
+            <Box {...baseProps} ref={tooltipRef}>
+              <div style={{ fontWeight:'bold', fontSize:'0.95em', lineHeight:1 }}>{hoveredYear}</div>
               {data?.partyName && (
-                <div style={{ fontSize: '0.85em', color: data.color }}>
+                <div style={{ fontSize:'0.8em', color: data.color, lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                   {data.partyName}: {data.percentage?.toFixed(1)}%
                 </div>
               )}
@@ -91,35 +137,37 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
           );
         })()}
         {/* ticks - visual only */}
-        <Box position="absolute" left={0} right={0} top={0} bottom={0} pointerEvents="none" zIndex={1}>
-          <svg width="100%" height="100%" viewBox="0 0 1000 44" preserveAspectRatio="none">
+        <Box position="absolute" left={`${metrics.offsetLeft}px`} width={`${Math.max(metrics.width,0)}px`} top={`${Math.max(0, metrics.offsetTop + (metrics.height/2) - 18)}px`} height="38px" pointerEvents="none" zIndex={1}>
+          <svg width="100%" height="100%" viewBox="0 0 1000 38" preserveAspectRatio="xMidYMid meet">
             {electionYears.map((y,i)=>{
               const t = (y-1950)/(2025-1950);
-              const x = t * 1000; // Match 0-100% positioning in viewBox coordinates
+              const x = Math.max(2, Math.min(998, t * 1000)); // keep within viewBox to avoid clipping
               const data = tickData.get(y);
               const color = data?.color || '#666';
               return (
                 <g key={y}>
-                  {/* Very short stem below track */}
-                  <line x1={x} y1={5} x2={x} y2={22} stroke={color} strokeWidth={1} />
-                  <circle cx={x} cy={5} r={4} fill={color} />
+                  {/* Stem below track (rendered under the slider track via z-index) */}
+                  <line x1={x} y1={5} x2={x} y2={18} stroke={color} strokeWidth={2} strokeLinecap="round" />
                 </g>
               );
             })}
           </svg>
         </Box>
-        <Slider aria-label='timeline' min={1950} max={2025} step={1} value={year} onChange={onChange} mt={4}>
-          <SliderTrack bg='black'>
-            <SliderFilledTrack bg='black' />
-          </SliderTrack>
-          <SliderThumb bg='transparent' boxSize='24px' _focus={{ boxShadow: 'none' }} _active={{ boxShadow: 'none' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" style={{ transform: 'translateY(7px)' }}>
-              <path d="M12 4 L20 16 L4 16 Z" fill="black" />
-            </svg>
-          </SliderThumb>
-        </Slider>
+        {/* Slider track over stems, under pin heads */}
+        <Box position="relative" zIndex={2}>
+          <Slider aria-label='timeline' min={1950} max={2025} step={1} value={year} onChange={onChange} mt={4}>
+            <SliderTrack bg='black' ref={sliderTrackRef}>
+              <SliderFilledTrack bg='black' />
+            </SliderTrack>
+            <SliderThumb bg='transparent' boxSize='24px' _focus={{ boxShadow: 'none' }} _active={{ boxShadow: 'none' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" style={{ transform: 'translateY(7px)' }}>
+                <path d="M12 4 L20 16 L4 16 Z" fill="black" />
+              </svg>
+            </SliderThumb>
+          </Slider>
+        </Box>
       </Box>
-      <Text fontWeight="medium" pr={3} lineHeight={1}>2025</Text>
+  <Text fontWeight="medium" pr={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-2px)' }}>2025</Text>
     </HStack>
   );
 }

@@ -6,6 +6,7 @@ import * as topojson from 'topojson-client';
 // world-countries provides metadata to determine European countries
 import worldCountries from 'world-countries';
 import { CountryKey } from '@/types';
+import Timeline from './Timeline';
 
 // ISO alpha-2 to our country keys
 const keyByISO: Partial<Record<string, CountryKey>> = {
@@ -32,7 +33,7 @@ europeanAlpha2.delete('RU');
 
 const WIDTH = 1200; const HEIGHT = 700; // logical viewport
 
-export default function MapEurope({ selected, onSelect }: { selected?: CountryKey; onSelect: (c: CountryKey)=>void }) {
+export default function MapEurope({ selected, onSelect, year, onYearChange }: { selected?: CountryKey; onSelect: (c: CountryKey)=>void; year: number; onYearChange: (y:number)=>void }) {
   const ref = useRef<SVGSVGElement>(null);
   const BASE_SCALE = 1;
   const [scale,setScale]=useState<number>(BASE_SCALE);
@@ -166,8 +167,8 @@ export default function MapEurope({ selected, onSelect }: { selected?: CountryKe
         .attr('shape-rendering','geometricPrecision');
     }
 
-    // simple drag panning
-  svg.on('mousedown', (event: MouseEvent)=>{ dragging.current = { x: event.clientX, y: event.clientY }; });
+    // simple drag panning (prevent text selection while dragging)
+  svg.on('mousedown', (event: MouseEvent)=>{ event.preventDefault(); dragging.current = { x: event.clientX, y: event.clientY }; });
       svg.on('mousemove', (event: MouseEvent)=>{
         if (dragging.current) {
           const dx = event.clientX - dragging.current.x;
@@ -193,7 +194,7 @@ export default function MapEurope({ selected, onSelect }: { selected?: CountryKe
 
   return (
     <VStack align="stretch" spacing={0} h="100%" flex={1}>
-  <Box ref={containerRef} position="relative" flex={1} h="100%" minH={0}>
+  <Box ref={containerRef} position="relative" flex={1} h="100%" minH={0} style={{ userSelect:'none' }}>
         {error && <Text color="red.600" p={4}>{error}</Text>}
         {loading && !error && <Spinner position='absolute' left='50%' top='50%' />}
   <svg ref={ref} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ display:'block', background:'#FFFFFF', visibility: loading||error?'hidden':'visible' }} />
@@ -202,9 +203,16 @@ export default function MapEurope({ selected, onSelect }: { selected?: CountryKe
       {hoverName}
     </Box>
   )}
-  <Box position="absolute" bottom={8} right={8} display="flex" gap={2}>
+  {/* Zoom controls moved to top-left to avoid tooltip overlap */}
+  <Box position="absolute" top={8} left={8} display="flex" gap={2} zIndex={6}>
           <button className="btn" aria-label="Zoom in" onClick={()=>setScale((s:number)=>Math.min(4,s*1.2))}>+</button>
           <button className="btn" aria-label="Zoom out" onClick={()=>setScale((s:number)=>Math.max(BASE_SCALE,s/1.2))}>-</button>
+        </Box>
+        {/* Timeline overlay */}
+        <Box position="absolute" left={0} right={0} bottom={0} px={4} pb={3} display="flex" justifyContent="center" zIndex={20} pointerEvents="auto" overflow="visible">
+          <Box maxW="980px" width="100%">
+            <Timeline year={year} onChange={onYearChange} />
+          </Box>
         </Box>
       </Box>
   </VStack>
