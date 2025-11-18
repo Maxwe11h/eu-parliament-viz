@@ -1,0 +1,16 @@
+Acronym,NativeName,EnglishName,EconRating,SocialRating,EconCategory,SocialCategory,SocialCategoryExtended,Notes
+Die Linke / PDS,Die Linke / Partei des Demokratischen Sozialismus,The Left / Party of Democratic Socialism,-9,-6,Far Left,Far Left,Libertarian-Left,"Democratic socialist; strongly redistributive, socially progressive."
+SPD,Sozialdemokratische Partei Deutschlands,Social Democratic Party of Germany,-4,-3,Left,Left,Centre-Left,"Social-democratic, pro-welfare, moderately progressive."
+Greens (B90/Grüne),Bündnis 90/Die Grünen,Alliance 90 / The Greens,-5,-8,Left,Far Left,Libertarian-Left,"Eco-progressive, socially liberal, post-materialist."
+FDP,Freie Demokratische Partei,Free Democratic Party,6,-5,Right,Centre-Right,Libertarian-Right,"Classical-liberal, pro-market, socially liberal."
+CDU/CSU,Christlich Demokratische Union / Christlich-Soziale Union,Christian Democratic Union / Christian Social Union,4,5,Centre-Right,Right,Authoritarian-Right,"Christian-democratic, market-oriented, socially conservative."
+AfD,Alternative für Deutschland,Alternative for Germany,7,8,Far Right,Far Right,Authoritarian-Right,"National-conservative, nativist, anti-EU positions."
+DP,Deutsche Partei,German Party,4,7,Centre-Right,Right,Authoritarian-Right,"Conservative-regional, monarchist leanings (1950s)."
+BP,Bayernpartei,Bavaria Party,1,3,Centre,Centre-Right,Moderate-Conservative,"Bavarian regionalist, economically centrist."
+GB/BHE,Gesamtdeutscher Block/Bund der Heimatvertriebenen und Entrechteten,All-German Bloc/League of Expellees and Deprived of Rights,3,6,Centre-Right,Right,Authoritarian-Right,"Expellee-interest party, nationalist-conservative."
+Zentrum (DZP),Deutsche Zentrumspartei,German Centre Party,0,3,Centre,Centre-Right,Moderate-Conservative,Catholic centrist-conservative.
+KPD,Kommunistische Partei Deutschlands,Communist Party of Germany,-10,-2,Far Left,Far Left,Centre-Left,"Communist Party, banned 1956, Marxist-Leninist."
+DRP,Deutsche Reichspartei,German Reich Party,8,9,Far Right,Far Right,Authoritarian-Right,"German Reich Party, nationalist-far-right."
+WAV,Wirtschaftliche Aufbau-Vereinigung,Economic Reconstruction Union,2,4,Centre-Right,Right,Moderate-Conservative,Economic-interest and expellee group (1949).
+SSW,Südschleswigscher Wählerverband,South Schleswig Voter Federation,-1,-5,Centre-Left,Left,Libertarian-Left,"Danish minority party, social-liberal, pro-minority rights."
+Independents,Unabhängige Kandidaten,Independent Candidates,0,0,Centre,Centre,Centre,Non-aligned independents (1949 only).

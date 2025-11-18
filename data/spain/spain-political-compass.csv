@@ -1,0 +1,58 @@
+Acronym,NativeName,EnglishName,EconRating,SocialRating,EconCategory,SocialCategory,SocialCategoryExtended,Notes
+AP,Alianza Popular,People's Alliance,6,5,Right,Right,autoritaire (ordre/sécurité),Conservative; precursor to PP
+AP-PDP,Alianza Popular – Partido Demócrata Popular,People's Alliance – People's Democratic Party,5,4,Right,Right,autoritaire (ordre/sécurité),1982 joint list; conservative/Christian‑democratic
+Amaiur,Amaiur,Amaiur,-3,5,Left,Right,autoritaire (ordre/sécurité),Abertzale left coalition (2011)
+BNG,Bloque Nacionalista Galego,Galician Nationalist Bloc,-3,1,Left,Centre,plutôt autoritaire,Left‑wing Galician nationalist
+CC,Coalición Canaria,Canarian Coalition,1,2,Centre,Centre-Right,plutôt autoritaire,"Regionalist, centrist/centre‑right"
+CC-NC,Coalición Canaria – Nueva Canarias,Canarian Coalition – New Canaries,1,1,Centre,Centre,plutôt autoritaire,Canary joint list with NC
+CC-NCa,Coalición Canaria – Nueva Canarias – Agrupación,Canarian Coalition – New Canaries – Agrupación,1,1,Centre,Centre,plutôt autoritaire,Variant joint list label
+CC-PNC,Coalición Canaria – Partido Nacionalista Canario,Canarian Coalition – Canarian Nationalist Party,1,2,Centre,Centre-Right,plutôt autoritaire,Canary joint list
+CCa,Coalición Canaria,Canarian Coalition (abbr.),1,2,Centre,Centre-Right,plutôt autoritaire,Abbreviated tag used in results tables
+CD,Democracia Cristiana,Christian Democracy (Spain),2,2,Centre-Right,Centre-Right,plutôt autoritaire,Small Christian‑democratic group (1979)
+CDC,Convergència Democràtica de Catalunya,Democratic Convergence of Catalonia,2,2,Centre-Right,Centre-Right,plutôt autoritaire,Catalan liberal‑conservative
+CDS,Centro Democrático y Social,Democratic and Social Centre,2,1,Centre-Right,Centre,plutôt autoritaire,"Centrist (Suárez, mid‑80s)"
+CUP,Candidatura d'Unitat Popular,Popular Unity Candidacy,-8,-4,Far Left,Left,libertaire (progressiste),"Far‑left, pro‑independence (Catalonia)"
+CiU,Convergència i Unió,Convergence and Union,2,2,Centre-Right,Centre-Right,plutôt autoritaire,"Catalan federation (CDC+UDC), liberal/Christian‑democratic"
+Compromis,Compromís,Compromís,-3,-1,Left,Centre-Left,plutôt libertaire,Valencian green‑left
+Compromis-Q,Compromís – Equo,Compromís – Equo,-3,-1,Left,Centre-Left,plutôt libertaire,Green‑left joint list
+Cs,Ciudadanos,Citizens (Ciudadanos),2,1,Centre-Right,Centre,plutôt autoritaire,Liberal/centrist (declining after 2019)
+DiL,Democràcia i Llibertat,Democracy and Freedom,2,2,Centre-Right,Centre-Right,plutôt autoritaire,Catalan centre‑right joint list (2015)
+EA,Eusko Alkartasuna,Basque Solidarity,-2,2,Centre-Left,Centre-Right,plutôt autoritaire,"Basque social‑democratic, pro‑independence"
+EC-FED,Esquerra de Catalunya – Front Electoral Democràtic,Left of Catalonia – Democratic Electoral Front,-3,-1,Left,Centre-Left,plutôt libertaire,1977 one‑off Catalan left alliance
+EDCEE,Entesa dels Catalans – Entesa Electoral,Agreement of the Catalans (entente),-3,-1,Left,Centre-Left,plutôt libertaire,1977 Catalan alliance label
+EE,Euskadiko Ezkerra,Basque Left,-3,0,Left,Centre,centre (mix libertés/ordre),Basque social‑democratic (later merged with PSE‑PSOE)
+EHB,EH Bildu,EH Bildu,-3,4,Left,Right,autoritaire (ordre/sécurité),Abertzale left coalition
+ERC,Esquerra Republicana de Catalunya,Republican Left of Catalonia,-4,-1,Left,Centre-Left,plutôt libertaire,"Social‑democratic, pro‑independence"
+ERC-CatSi,ERC – Catalunya Sí,ERC – Catalonia Yes,-4,-1,Left,Centre-Left,plutôt libertaire,Pro‑independence joint list 2015–2016
+ERC-FN,ERC – Front Nacional? (ambiguo),ERC – National Front? (ambiguous),-4,-1,Left,Centre-Left,plutôt libertaire,Ambiguous 1979 tag
+GBai,Geroa Bai,Geroa Bai,-1,1,Centre-Left,Centre,plutôt autoritaire,"Navarrese regionalist, moderate/centrist"
+HB,Herri Batasuna,Herri Batasuna,-2,6,Centre-Left,Right,autoritaire (ordre/sécurité),"Abertzale left; Basque nationalist, radical left"
+IC,Iniciativa per Catalunya,Initiative for Catalonia,-4,-2,Left,Centre-Left,plutôt libertaire,Catalan eco‑socialist (ICV lineage)
+IU,Izquierda Unida,United Left,-6,-2,Left,Centre-Left,plutôt libertaire,Left alliance led by PCE
+IU-UP,IU-UP,IU-UP,0,0,Centre,Centre,centre (mix libertés/ordre),Acronyme peu courant / libellé joint — compléter si nécessaire.
+Junts,Junts,Junts,2,2,Centre-Right,Centre-Right,plutôt autoritaire,Successor brand to JxCat (short form)
+JxCat,Junts per Catalunya,Together for Catalonia,2,2,Centre-Right,Centre-Right,plutôt autoritaire,Catalan centre‑right
+MP,Más País,More Country,-3,-2,Left,Centre-Left,plutôt libertaire,Green social‑democratic (Errejón)
+Na+,Navarra Suma,Navarra Suma,4,3,Right,Centre-Right,plutôt autoritaire,UPN+PP+Cs coalition (2019)
+NaBai,Nafarroa Bai,Nafarroa Bai,-2,0,Centre-Left,Centre,centre (mix libertés/ordre),Navarrese Basque coalition (2008)
+PAR,Partido Aragonés,Aragonese Party,1,1,Centre,Centre,plutôt autoritaire,Regionalist/centrist (1979 single)
+PCE,Partido Comunista de España,Communist Party of Spain,-9,-2,Far Left,Centre-Left,plutôt libertaire,"Communist, republican"
+PDC,Partit Demòcrata de Catalunya (hist.),Democratic Party of Catalonia (historic),2,1,Centre-Right,Centre,plutôt autoritaire,Catalan centre‑right (as list label in 1977 context)
+PNV,Partido Nacionalista Vasco (Euzko Alderdi Jeltzalea),Basque Nationalist Party,1,2,Centre,Centre-Right,plutôt autoritaire,"Christian‑democratic, Basque nationalist"
+PP,Partido Popular,People's Party,4,3,Right,Centre-Right,plutôt autoritaire,"Conservative, Christian‑democratic, liberal‑conservative"
+PRC,Partido Regionalista de Cantabria,Regionalist Party of Cantabria,1,2,Centre,Centre-Right,plutôt autoritaire,"Regionalist, centrist"
+PSA-PA,Partido Socialista de Andalucía – Partido Andaluz,Andalusian Socialist Party – Andalusian Party,-2,0,Centre-Left,Centre,centre (mix libertés/ordre),Andalusian regional lists (1979)
+PSOE,Partido Socialista Obrero Español,Spanish Socialist Workers' Party,-3,-2,Left,Centre-Left,plutôt libertaire,"Social‑democratic, pro‑EU"
+PSP-US,Partido Socialista Popular – Unidad Socialista,Popular Socialist Party – Socialist Unity,-4,-2,Left,Centre-Left,plutôt libertaire,Socialist alliance (1977)
+Podemos,Podemos,Podemos,-5,-3,Left,Left,libertaire (progressiste),"Left‑populist, social‑democratic"
+Sumar,Sumar,Sumar,-4,-2,Left,Centre-Left,plutôt libertaire,Broad left platform (2023)
+TE,Teruel Existe,Teruel Exists,0,1,Centre,Centre,plutôt autoritaire,"Regionalist (Aragon), anti‑neglect"
+UCD,Unión de Centro Democrático,Union of the Democratic Centre,1,1,Centre,Centre,plutôt autoritaire,"Centrist, liberal/conservative alliance (1977–1983)"
+UCiDCC,Unió del Centre i Democràcia Cristiana de Catalunya,Union of the Centre and Christian Democracy of Catalonia,1,1,Centre,Centre,plutôt autoritaire,1977 Catalan centrist/Christian‑democratic alliance
+UN,Unión Navarra (etiqueta local),Navarrese Union (local label),2,2,Centre-Right,Centre-Right,plutôt autoritaire,Minor 1979 tag; likely regional/centrist
+UP,Unidos Podemos,United We Can,-5,-2,Left,Centre-Left,plutôt libertaire,2016 coalition around Podemos+IU
+UPC,Unitat Popular de Catalunya,Unity of the People of Catalonia,-3,-1,Left,Centre-Left,plutôt libertaire,Catalan left list (1979)
+UPN,Unión del Pueblo Navarro,Navarrese People's Union,3,3,Centre-Right,Centre-Right,plutôt autoritaire,Regional conservative
+UPyD,"Unión, Progreso y Democracia","Union, Progress and Democracy",1,0,Centre,Centre,centre (mix libertés/ordre),"Centrist, civic nationalist (Spain-wide)"
+UV,Unión Valenciana,Valencian Union,2,2,Centre-Right,Centre-Right,plutôt autoritaire,Regional conservative (Valencia)
+Vox,Vox,Vox,7,6,Right,Right,autoritaire (ordre/sécurité),"Right‑wing to far‑right, national‑conservative"

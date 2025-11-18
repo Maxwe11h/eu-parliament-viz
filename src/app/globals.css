@@ -1,0 +1,21 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+:root {
+  --stone-50: #fafaf9;
+  --stone-100: #f5f5f4;
+  --stone-200: #e7e5e4;
+  --eu-green: #2e7d32;
+  --eu-green-light: #4caf50;
+  --eu-green-dark: #1b5e20;
+  --ocean: #7fc8ff;
+  --land-gray: #9ca3af;
+}
+
+.section {
+  border: 1px solid var(--stone-200);
+  border-radius: 12px;
+  background: white;
+}
+
+.btn { background: white; border: 1px solid var(--stone-200); border-radius: 8px; padding: 6px 10px; font-weight: 600; box-shadow: 0 1px 1px rgba(0,0,0,0.06); }
+.btn:hover { background: var(--stone-50); }
