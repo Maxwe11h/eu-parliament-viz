@@ -61,42 +61,62 @@ export default function ElectionDonut({ data }: { data?: YearData }){
   .attr('stroke-width', 1.5)
       .attr('opacity', 0.95);
 
-    // tooltip
+    // tooltip (timeline-style)
     const tooltip = d3.create('div')
-      .style('position','absolute')
+      .style('position','fixed')
       .style('pointer-events','none')
-      .style('background','rgba(0,0,0,0.8)')
+      .style('background','black')
       .style('color','#fff')
-      .style('padding','6px 8px')
-      .style('border-radius','6px')
+      .style('padding','10px')
+      .style('border-radius','10px')
       .style('font-size','12px')
-      .style('transform','translate(-50%,-120%)')
-      .style('opacity','0');
-    (svg.node()?.parentElement as HTMLElement).appendChild(tooltip.node()!);
+      .style('line-height','1.15')
+      .style('box-sizing','border-box')
+      .style('transform','translate(-50%,-100%)')
+      .style('opacity','0')
+      .style('z-index','2000')
+      .style('box-shadow','0 4px 12px rgba(0,0,0,0.35)')
+      .style('white-space','nowrap')
+      .style('overflow','hidden');
+    const containerEl = svg.node()?.parentElement as HTMLElement;
+    if (containerEl && getComputedStyle(containerEl).position === 'static') {
+      containerEl.style.position = 'relative';
+    }
+    // Use body for fixed-positioned tooltip so it anchors to viewport
+    document.body.appendChild(tooltip.node()!);
 
     arcs.on('mouseenter', function(event: any, d:any){
-      const pts = d.data.parties
+      const header = `${d.data.label}`;
+      const sub = `${d.data.pct.toFixed(1)}% of votes`;
+      const parties = d.data.parties
         .slice()
         .sort((a:any,b:any)=> (b.votes||0) - (a.votes||0))
-        .map((p:any)=>`• ${p.englishName ?? p.acronym} — ${p.pct.toFixed(1)}%`);
-      const lines = [`${d.data.label}: ${d.data.pct.toFixed(1)}% (${d.data.value})`, ...pts];
-      tooltip.style('opacity','1').html(lines.join('<br/>'));
+        .map((p:any)=>`<span style=\"color:#ddd;display:block;text-overflow:ellipsis;overflow:hidden\">• ${p.englishName ?? p.acronym} — ${p.pct.toFixed(1)}%</span>`)
+        .join('');
+      tooltip.style('opacity','1').style('width','').html(`
+        <div style=\"font-weight:700;color:#fff;text-overflow:ellipsis;overflow:hidden;max-width:100%\">${header}</div>
+        <div style=\"color:${d.data.color};text-overflow:ellipsis;overflow:hidden;max-width:100%;margin-top:4px\">${sub}</div>
+        <div style=\"margin-top:6px\">${parties}</div>
+      `);
+      // no width lock: each hover sizes independently
     }).on('mousemove', function(event:any){
-      const vw = window.innerWidth;
+      const vw = window.innerWidth || document.documentElement.clientWidth;
+      const margin = 8;
       const desiredX = event.clientX;
-      const clampMargin = 20;
-      const boxWidth = 260; // fixed width
-      const left = Math.min(vw - clampMargin, Math.max(clampMargin, desiredX));
-      tooltip.style('width', boxWidth+'px')
-        .style('left', left+'px')
-        .style('top', `${event.clientY}px`)
-        .style('transform','translate(-50%,-110%)');
+      const desiredY = event.clientY - 10;
+      const widthPx = (tooltip.node() as HTMLDivElement).getBoundingClientRect().width || 0;
+      const half = widthPx/2;
+      let left = desiredX;
+      if (left - half < margin) left = margin + half;
+      if (left + half > vw - margin) left = vw - margin - half;
+      tooltip.style('left', left+'px').style('top', `${Math.max(margin, desiredY)}px`).style('transform','translate(-50%,-100%)');
     }).on('mouseleave', function(){
       tooltip.style('opacity','0');
     });
 
     // no center label per request
 
+    return () => { try { tooltip.remove(); } catch {} };
   },[socialSlices]);
 
   return (

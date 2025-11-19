@@ -6,7 +6,7 @@ import { CountryKey, YearData } from '@/types';
 type DataContextValue = {
   allData: Record<CountryKey, YearData[]>;
   country?: CountryKey;
-  setCountry: (c: CountryKey)=>void;
+  setCountry: (c?: CountryKey)=>void;
   year: number;
   setYear: (y:number)=>void;
   currentYearData?: YearData;
@@ -47,7 +47,7 @@ export function DataProvider({ children, allData }: { children: React.ReactNode;
     const prev = [...arr].reverse().find(d=>d.year <= yearState);
     return prev ?? arr[0];
   },[allData,country,yearState]);
-  return <DataContext.Provider value={{ allData, country, setCountry, year: yearState, setYear, currentYearData }}>{children}</DataContext.Provider>;
+  return <DataContext.Provider value={{ allData, country, setCountry: (c?: CountryKey)=>setCountry(c), year: yearState, setYear, currentYearData }}>{children}</DataContext.Provider>;
 }
 
 export function useData(){

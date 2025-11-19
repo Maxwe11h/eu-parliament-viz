@@ -33,7 +33,7 @@ europeanAlpha2.delete('RU');
 
 const WIDTH = 1200; const HEIGHT = 700; // logical viewport
 
-export default function MapEurope({ selected, onSelect, year, onYearChange }: { selected?: CountryKey; onSelect: (c: CountryKey)=>void; year: number; onYearChange: (y:number)=>void }) {
+export default function MapEurope({ selected, onSelect, year, onYearChange, timelineRightOffset }: { selected?: CountryKey; onSelect: (c: CountryKey)=>void; year: number; onYearChange: (y:number)=>void; timelineRightOffset?: string | number }) {
   const ref = useRef<SVGSVGElement>(null);
   const BASE_SCALE = 1;
   const [scale,setScale]=useState<number>(BASE_SCALE);
@@ -208,8 +208,8 @@ export default function MapEurope({ selected, onSelect, year, onYearChange }: { 
           <button className="btn" aria-label="Zoom in" onClick={()=>setScale((s:number)=>Math.min(4,s*1.2))}>+</button>
           <button className="btn" aria-label="Zoom out" onClick={()=>setScale((s:number)=>Math.max(BASE_SCALE,s/1.2))}>-</button>
         </Box>
-        {/* Timeline overlay */}
-        <Box position="absolute" left={0} right={0} bottom={0} px={4} pb={3} display="flex" justifyContent="center" zIndex={20} pointerEvents="auto" overflow="visible">
+        {/* Timeline overlay (respect right offset when a panel is open) */}
+        <Box position="absolute" left={0} right={timelineRightOffset ?? 0} bottom={0} px={4} pb={3} display="flex" justifyContent="center" zIndex={20} pointerEvents="auto" overflow="visible" style={{ transition: 'right 220ms ease-out' }}>
           <Box maxW="980px" width="100%">
             <Timeline year={year} onChange={onYearChange} />
           </Box>

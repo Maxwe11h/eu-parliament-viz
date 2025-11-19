@@ -73,28 +73,52 @@ export default function Spectrum({ data }: { data?: YearData }){
       .attr('fill-opacity',0.85)
       .attr('stroke','#111');
 
-    // custom tooltip
+    // custom tooltip (timeline-style)
     const tooltip = d3.create('div')
-      .style('position','absolute')
+      .style('position','fixed')
       .style('pointer-events','none')
-      .style('background','rgba(0,0,0,0.75)')
+      .style('background','black')
       .style('color','#fff')
-      .style('padding','6px 8px')
-      .style('border-radius','6px')
+      .style('padding','10px')
+      .style('border-radius','10px')
       .style('font-size','12px')
-      .style('transform','translate(-50%,-120%)')
-      .style('opacity','0');
+      .style('line-height','1.15')
+      .style('box-sizing','border-box')
+      .style('transform','translate(-50%,-100%)')
+      .style('opacity','0')
+      .style('z-index','2000')
+      .style('box-shadow','0 4px 12px rgba(0,0,0,0.35)')
+      .style('white-space','nowrap')
+      .style('overflow','hidden');
 
-    (svg.node()?.parentElement as HTMLElement).appendChild(tooltip.node()!);
+    const containerEl = svg.node()?.parentElement as HTMLElement;
+    // Append to body so fixed positioning uses viewport and avoids transformed ancestor issues
+    document.body.appendChild(tooltip.node()!);
 
     circles.on('mouseenter', function (event, d: PartyPoint){
-      const social = d.socialCategory ? ` (${d.socialCategory})` : '';
-      tooltip.style('opacity','1').text(`${d.englishName ?? d.acronym}${social}: ${d.pct.toFixed(1)}%`);
+      const header = d.englishName ?? d.acronym;
+      const sub = `${d.socialCategory ?? 'Uncategorized'} • ${d.pct.toFixed(1)}%`;
+      tooltip.style('opacity','1').style('width','').html(`
+        <div style="font-weight:700;color:#fff;text-overflow:ellipsis;overflow:hidden;max-width:100%">${header}</div>
+        <div style="color:${d.color};text-overflow:ellipsis;overflow:hidden;max-width:100%;margin-top:4px">${sub}</div>
+      `);
+      // no width lock: each hover sizes independently
     }).on('mousemove', function(event){
-      tooltip.style('left', `${event.clientX}px`).style('top', `${event.clientY}px`);
+      const vw = window.innerWidth || document.documentElement.clientWidth;
+      const margin = 8;
+      const desiredX = event.clientX;
+      const desiredY = event.clientY - 10; // above cursor
+      const widthPx = (tooltip.node() as HTMLDivElement).getBoundingClientRect().width || 0;
+      const half = widthPx/2;
+      let left = desiredX;
+      if (left - half < margin) left = margin + half;
+      if (left + half > vw - margin) left = vw - margin - half;
+      tooltip.style('left', `${left}px`).style('top', `${Math.max(margin, desiredY)}px`).style('transform','translate(-50%,-100%)');
     }).on('mouseleave', function(){
       tooltip.style('opacity','0');
     });
+    // cleanup tooltip on unmount or data change
+    return () => { try { tooltip.remove(); } catch {} };
   },[data]);
   return (
     <Box p={2} m={0}>
