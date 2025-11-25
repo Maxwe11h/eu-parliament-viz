@@ -1,33 +1,33 @@
-"Acronym,NativeName,EnglishName,EconRating,SocialRating,EconCategory,SocialCategory,SocialCategoryExtended,Notes"
-"ALT,Alternativet,The Alternative,-3,-5,Left,Left,green progressive,""
-"ATA_GL,Atassut,Atassut (Greenland),2,2,Centre-Right,Centre-Right,liberal-conservative, unionist,""
-"CD,Centrum-Demokraterne,Centre Democrats,0,0,Centre,Centre,centrist, social-liberal,""
-"DD,Danmarksdemokraterne,Denmark Democrats,3,5,Right,Right,right-populist, conservative,""
-"DEM_GL,Demokraatit,Democrats (Greenland),1,-1,Centre-Right,Centre-Left,centrist liberal,""
-"DF,Dansk Folkeparti,Danish People's Party,2,7,Centre-Right,Far Right,national-conservative, anti-immigration,""
-"DKP,Danmarks Kommunistiske Parti,Communist Party of Denmark,-9,6,Far Left,Right,communist, state-socialist; authoritarian left,""
-"DU,De Uafhængige,Independent Party (The Independents),5,2,Right,Centre-Right,right-wing, anti-tax,""
-"EL,Enhedslisten – De Rød-Grønne,Red–Green Alliance,-7,-3,Far Left,Left,eco-socialist, progressive,""
-"FK,Fælles Kurs,Common Course,-8,2,Far Left,Centre-Right,far-left, pro-Soviet; socially traditional,""
-"FrP,Fremskridtspartiet,Progress Party,6,4,Right,Right,right-populist, anti-tax,""
-"IA_GL,Inuit Ataqatigiit,Inuit Ataqatigiit (Greenland),-5,-4,Left,Left,left-green, pro-independence,""
-"IND,Uafhængig,Independent (Denmark),0,0,Centre,Centre,non-aligned,""
-"KD,Kristendemokraterne,Christian Democrats,1,4,Centre-Right,Right,Christian democratic, socially conservative,""
-"KF,Det Konservative Folkeparti,Conservative People's Party,4,3,Right,Right,conservative-liberal, socially conservative,""
-"LA,Liberal Alliance,Liberal Alliance,6,-4,Right,Left,classical liberal/libertarian,""
-"LC,Liberalt Centrum,Liberal Centre,1,0,Centre-Right,Centre,centrist liberal,""
-"MOD,Moderaterne,The Moderates,1,-1,Centre-Right,Centre-Left,centrist, pragmatic liberal,""
-"NAL_GL,Partii Naleraq,Naleraq (Greenland),-1,-1,Centre-Left,Centre-Left,centrist-populist, pro-independence,""
-"NB,Nye Borgerlige,New Right,5,6,Right,Right,national-conservative, right-populist,""
-"PP_FO,Fólkaflokkurin,People's Party (Faroe Islands),4,3,Right,Right,conservative-liberal, unionist,""
-"REP_FO,Tjóðveldi,Republic (Faroe Islands),-3,-3,Left,Left,left-leaning, pro-independence,""
-"RF,Retsforbundet,Justice Party of Denmark,-1,-2,Centre-Left,Centre-Left,georgist/centrist, civil-libertarian,""
-"RV,Radikale Venstre,Danish Social Liberal Party,-1,-5,Centre-Left,Left,social-liberal, civil-libertarian,""
-"SD,Socialdemokraterne,Social Democrats,-2,-1,Centre-Left,Centre-Left,centre-left, progressive social democracy,""
-"SDP_FO,Javnaðarflokkurin,Social Democratic Party (Faroe Islands),-2,-1,Centre-Left,Centre-Left,social democratic, unionist,""
-"SF,Socialistisk Folkeparti,Socialist People's Party,-6,-3,Left,Left,democratic socialist/green-left,""
-"SIU_GL,Siumut,Siumut (Greenland),-2,-1,Centre-Left,Centre-Left,centre-left, home-rule,""
-"SP,Slesvigsk Parti,Schleswig Party,0,-1,Centre,Centre-Left,regional minority, centrist,""
-"UP_FO,Sambandsflokkurin,Union Party (Faroe Islands),3,3,Right,Right,liberal-conservative, unionist,""
-"V,Venstre,Liberal Party of Denmark (Venstre),4,1,Right,Centre-Right,centre-right, economically liberal,""
-"VS,Venstresocialisterne,Left Socialists,-8,-4,Far Left,Left,far-left libertarian-socialist,"""
+Acronym,NativeName,EnglishName,EconRating,SocialRating,EconCategory,SocialCategory,SocialCategoryExtended,Notes
+ALT,Alternativet,The Alternative,-3,-5,Left,Left,green progressive,""
+ATA_GL,Atassut,Atassut (Greenland),2,2,Centre-Right,Centre-Right,liberal-conservative, unionist
+CD,Centrum-Demokraterne,Centre Democrats,0,0,Centre,Centre,centrist, social-liberal,
+DD,Danmarksdemokraterne,Denmark Democrats,3,5,Right,Right,right-populist, conservative,
+DEM_GL,Demokraatit,Democrats (Greenland),1,-1,Centre-Right,Centre-Left,centrist liberal,""
+DF,Dansk Folkeparti,Danish People's Party,2,7,Centre-Right,Far Right,national-conservative, anti-immigration,
+DKP,Danmarks Kommunistiske Parti,Communist Party of Denmark,-9,6,Far Left,Right,communist, state-socialist; authoritarian left,
+DU,De Uafhængige,Independent Party (The Independents),5,2,Right,Centre-Right,right-wing, anti-tax,
+EL,Enhedslisten – De Rød-Grønne,Red–Green Alliance,-7,-3,Far Left,Left,eco-socialist, progressive,
+FK,Fælles Kurs,Common Course,-8,2,Far Left,Centre-Right,far-left, pro-Soviet; socially traditional,
+FrP,Fremskridtspartiet,Progress Party,6,4,Right,Right,right-populist, anti-tax,
+IA_GL,Inuit Ataqatigiit,Inuit Ataqatigiit (Greenland),-5,-4,Left,Left,left-green, pro-independence,
+IND,Uafhængig,Independent (Denmark),0,0,Centre,Centre,non-aligned,""
+KD,Kristendemokraterne,Christian Democrats,1,4,Centre-Right,Right,Christian democratic, socially conservative,
+KF,Det Konservative Folkeparti,Conservative People's Party,4,3,Right,Right,conservative-liberal, socially conservative,
+LA,Liberal Alliance,Liberal Alliance,6,-4,Right,Left,classical liberal/libertarian,""
+LC,Liberalt Centrum,Liberal Centre,1,0,Centre-Right,Centre,centrist liberal,""
+MOD,Moderaterne,The Moderates,1,-1,Centre-Right,Centre-Left,centrist, pragmatic liberal,
+NAL_GL,Partii Naleraq,Naleraq (Greenland),-1,-1,Centre-Left,Centre-Left,centrist-populist, pro-independence,
+NB,Nye Borgerlige,New Right,5,6,Right,Right,national-conservative, right-populist,
+PP_FO,Fólkaflokkurin,People's Party (Faroe Islands),4,3,Right,Right,conservative-liberal, unionist,
+REP_FO,Tjóðveldi,Republic (Faroe Islands),-3,-3,Left,Left,left-leaning, pro-independence,
+RF,Retsforbundet,Justice Party of Denmark,-1,-2,Centre-Left,Centre-Left,georgist/centrist, civil-libertarian,
+RV,Radikale Venstre,Danish Social Liberal Party,-1,-5,Centre-Left,Left,social-liberal, civil-libertarian,
+SD,Socialdemokraterne,Social Democrats,-2,-1,Centre-Left,Centre-Left,centre-left, progressive social democracy,
+SDP_FO,Javnaðarflokkurin,Social Democratic Party (Faroe Islands),-2,-1,Centre-Left,Centre-Left,social democratic, unionist,
+SF,Socialistisk Folkeparti,Socialist People's Party,-6,-3,Left,Left,democratic socialist/green-left,""
+SIU_GL,Siumut,Siumut (Greenland),-2,-1,Centre-Left,Centre-Left,centre-left, home-rule,
+SP,Slesvigsk Parti,Schleswig Party,0,-1,Centre,Centre-Left,regional minority, centrist,
+UP_FO,Sambandsflokkurin,Union Party (Faroe Islands),3,3,Right,Right,liberal-conservative, unionist,
+V,Venstre,Liberal Party of Denmark (Venstre),4,1,Right,Centre-Right,centre-right, economically liberal,
+VS,Venstresocialisterne,Left Socialists,-8,-4,Far Left,Left,far-left libertarian-socialist,""

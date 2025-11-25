@@ -1,7 +1,7 @@
 Acronym,NativeName,EnglishName,EconRating,SocialRating,EconCategory,SocialCategory,SocialCategoryExtended,Notes
 Die Linke / PDS,Die Linke / Partei des Demokratischen Sozialismus,The Left / Party of Democratic Socialism,-9,-6,Far Left,Far Left,Libertarian-Left,"Democratic socialist; strongly redistributive, socially progressive."
 SPD,Sozialdemokratische Partei Deutschlands,Social Democratic Party of Germany,-4,-3,Left,Left,Centre-Left,"Social-democratic, pro-welfare, moderately progressive."
-Greens (B90/Grüne),Bündnis 90/Die Grünen,Alliance 90 / The Greens,-5,-8,Left,Far Left,Libertarian-Left,"Eco-progressive, socially liberal, post-materialist."
+GRUENE,Bündnis 90/Die Grünen,Alliance 90 / The Greens,-5,-8,Left,Far Left,Libertarian-Left,"Eco-progressive, socially liberal, post-materialist."
 FDP,Freie Demokratische Partei,Free Democratic Party,6,-5,Right,Centre-Right,Libertarian-Right,"Classical-liberal, pro-market, socially liberal."
 CDU/CSU,Christlich Demokratische Union / Christlich-Soziale Union,Christian Democratic Union / Christian Social Union,4,5,Centre-Right,Right,Authoritarian-Right,"Christian-democratic, market-oriented, socially conservative."
 AfD,Alternative für Deutschland,Alternative for Germany,7,8,Far Right,Far Right,Authoritarian-Right,"National-conservative, nativist, anti-EU positions."

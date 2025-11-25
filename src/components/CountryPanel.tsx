@@ -27,13 +27,18 @@ export default function CountryPanel({ country, data }: { country?: CountryKey; 
           <Text fontSize="sm" color="gray.600">{displayedYear ?? ''}</Text>
         </VStack>
         {headerRight && headerRight.partyName && (
-          <VStack align="flex-end" spacing={1} minW="130px">
-            <Text fontSize="sm" fontWeight="semibold" textAlign="right" lineHeight="1.05" noOfLines={2}>{headerRight.partyName}</Text>
-            {headerRight.category && (
-              <Badge bg={categoryPalette[headerRight.category] || 'gray.300'} color="#fff" px={2} py={0.5} fontSize="10px" borderRadius="md" lineHeight="1">
-                {headerRight.category} {headerRight.percentage ? `• ${headerRight.percentage.toFixed(1)}%` : ''}
-              </Badge>
-            )}
+          <VStack align="flex-end" spacing={1} minW="160px">
+            <Text fontSize="sm" fontWeight="semibold" textAlign="right" lineHeight="1.05" noOfLines={2}>
+              {headerRight.partyName}
+              {headerRight.category && (
+                <>
+                  {' '}
+                  <Badge as="span" bg={categoryPalette[headerRight.category] || 'gray.600'} color="#fff" px={1.5} py={0.5} fontSize="10px" borderRadius="sm" lineHeight="1" ml={1}>
+                    {headerRight.percentage ? `${headerRight.percentage.toFixed(1)}%` : ''}
+                  </Badge>
+                </>
+              )}
+            </Text>
           </VStack>
         )}
       </HStack>

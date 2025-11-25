@@ -16,15 +16,16 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
   },[allData, country]);
   
   const tickData = useMemo(()=>{
-    if (!country) return new Map<number, { color: string; partyName?: string; percentage?: number }>();
-    const m = new Map<number, { color: string; partyName?: string; percentage?: number }>();
+    if (!country) return new Map<number, { color: string; partyName?: string; percentage?: number; collection?: 'Left'|'Centre'|'Right' }>();
+    const m = new Map<number, { color: string; partyName?: string; percentage?: number; collection?: 'Left'|'Centre'|'Right' }>();
     for (const y of electionYears) {
       const maj = majoritySocialCategory(allData, country, y);
       const color = maj.category ? categoryPalette[maj.category] || '#666' : '#666';
       m.set(y, { 
         color, 
         partyName: maj.partyName, 
-        percentage: maj.percentage 
+        percentage: maj.percentage,
+        collection: (maj as any).collection
       });
     }
     return m;
@@ -201,7 +202,10 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
               <div style={{ fontWeight:'bold', fontSize:'0.95em', lineHeight:1 }}>{hoveredYear}</div>
               {data?.partyName && (
                 <div style={{ fontSize:'0.8em', color: data.color, lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                  {data.partyName}: {data?.percentage?.toFixed(1)}%
+                  {(data.collection && data.collection !== data.partyName)
+                    ? `${data.collection} - ${data.partyName}`
+                    : data.partyName}
+                  {`: ${data?.percentage?.toFixed(1)}%`}
                 </div>
               )}
             </Box>
