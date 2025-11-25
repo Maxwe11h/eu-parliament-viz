@@ -20,7 +20,7 @@ export default function CountryPanel({ country, data }: { country?: CountryKey; 
   },[allData, country, displayedYear]);
 
   return (
-  <Box h="100%" overflow="auto" borderLeft="2px solid" borderRight="2px solid" borderColor="black" borderRadius="0" bg="white" p={0} display="flex" flexDirection="column">
+  <Box h="100%" overflow="auto" border="2px solid" borderColor="black" borderRadius="0" bg="white" p={0} display="flex" flexDirection="column">
   <HStack p={4} px={5} borderBottom="2px solid" borderColor="black" spacing={4} align="center">
         <VStack align="start" spacing={0} flex={1}>
           <Text fontSize="lg" fontWeight="bold">{country ? country.toUpperCase() : 'Select a country'}</Text>
@@ -42,16 +42,16 @@ export default function CountryPanel({ country, data }: { country?: CountryKey; 
         <ElectionDonut data={data} />
       </Box>
       <Box borderBottom="2px solid" borderColor="black" p={0}>
-        <PartyTable data={data} year={displayedYear} title={false} />
+        <Spectrum data={data} />
       </Box>
       <Box borderBottom="2px solid" borderColor="black" p={0}>
-        <Spectrum data={data} />
+        <PartyTable data={data} year={displayedYear} title={false} />
       </Box>
       {data && (
         <Box p={4}>
           <Text fontSize="xs" color="gray.600">Debug: Total seats from CSV: <b>{data.total}</b> | Sum of parties: <b>{data.sumParties}</b></Text>
         </Box>
       )}
-    </Box>
+  </Box>
   );
 }

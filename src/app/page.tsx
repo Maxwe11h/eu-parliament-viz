@@ -1,6 +1,5 @@
 "use client";
 import { useEffect } from 'react';
-import TopBar from '@/components/TopBar';
 import MapEurope from '@/components/MapEurope';
 import CountryPanel from '@/components/CountryPanel';
 import { CountryKey, YearData } from '@/types';
@@ -29,9 +28,8 @@ export default function Page() {
   },[country, setCountry]);
   return (
     <div style={{display:'flex',flexDirection:'column',height:'100vh', overflow:'hidden'}}>
-      <TopBar />
       <div style={{flex:1, position:'relative', minHeight:0, overflow:'hidden', display:'flex'}}>
-        <div style={{flex:1, minWidth:0, display:'flex', flexDirection:'column', minHeight:0, borderLeft:'2px solid black'}}>
+  <div style={{flex:1, minWidth:0, display:'flex', flexDirection:'column', minHeight:0, borderLeft:'2px solid black'}}>
           <MapEurope selected={country} onSelect={handleSelect} year={year} onYearChange={setYear} timelineRightOffset={country ? 'min(32vw, 520px)' : 0} />
         </div>
         {/* Backdrop removed per user request */}
@@ -53,7 +51,7 @@ export default function Page() {
           }}
           aria-hidden={!country}
         >
-          <div style={{flex:1, background:'white', borderLeft:'1px solid black', borderRight:'2px solid black', boxShadow:'-8px 0 24px rgba(0,0,0,0.25)', display:'flex'}}>
+          <div style={{flex:1, background:'white', borderLeft:'1px solid black', borderRight:'2px solid black', borderTop:'2px solid black', borderBottom:'2px solid black', boxShadow:'-8px 0 24px rgba(0,0,0,0.25)', display:'flex'}}>
             <CountryPanel country={country} data={currentYearData} />
           </div>
         </div>

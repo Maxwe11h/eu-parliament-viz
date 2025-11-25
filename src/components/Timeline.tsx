@@ -1,5 +1,5 @@
 "use client";
-import { HStack, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Text, Box } from '@chakra-ui/react';
+import { HStack, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Text, Box, Heading } from '@chakra-ui/react';
 import { useMemo, useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useData } from './DataContext';
@@ -117,7 +117,7 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
   const outerRef = useRef<HTMLDivElement>(null);
   return (
   <HStack ref={outerRef} pt={2} pb={0} px={0} border="2px solid" borderColor="gray.900" bg="white" align="center" spacing={3} borderRadius="12px" boxShadow="lg" overflow="visible" style={{ height: '54px' }}>
-  <Text fontWeight="medium" pl={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-4px)' }}>1950</Text>
+  <Heading as="h6" size="xs" pl={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-4px)' }}>1950</Heading>
   <Box position="relative" flex={1} height="38px" ref={trackRef}>
   {/* Clickable pin heads overlay - positioned above SVG and track */}
         {electionYears.map((y)=>{
@@ -239,7 +239,7 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
           </Slider>
         </Box>
       </Box>
-  <Text fontWeight="medium" pr={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-2px)' }}>2025</Text>
+  <Heading as="h6" size="xs" pr={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-4px)' }}>2025</Heading>
     </HStack>
   );
 }

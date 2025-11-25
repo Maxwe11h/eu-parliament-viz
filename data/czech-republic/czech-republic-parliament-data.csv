@@ -1,16 +1,16 @@
-Year,ANO,HSD-SMS,IND,KDS,KDU-ČSL,KSČ,KSČM,Motorists,ODA,ODS,OF,Piráti,SPD,SPR-RSČ,STAN,SZ,TOP 09,US,US-DEU,VV,ÚSVIT,ČSL,ČSS,ČSSD,Total,Notes
-1971,0,0,41,0,0,132,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,12,0,200,"Body: Czech National Council. Single-list National Front election. Source: Wikipedia/CZSO."
-1976,0,0,37,0,0,135,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,14,14,0,200,"Body: Czech National Council. Single-list National Front election. Source: Wikipedia/CZSO."
-1981,0,0,34,0,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,15,14,0,200,"Body: Czech National Council. Single-list National Front election. Source: Wikipedia/CZSO."
-1986,0,0,35,0,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,14,14,0,200,"Body: Czech National Council. Single-list National Front election. Source: Wikipedia/CZSO."
-1990,0,23,0,4,0,33,0,0,0,0,124,0,0,0,0,0,0,0,0,0,16,0,0,200,"Body: Czech National Council. KDU ran as a coalition (KDS+ČSL). Wikipedia gives KDS=4, ČSL=16."
-1992,0,14,0,10,15,0,10,0,14,66,0,0,0,6,0,0,0,0,0,0,0,0,16,151,"Body: Czech National Council. ODS–KDS ran jointly; Wikipedia lists KDS with 10 seats (rest ODS)."
-1996,0,0,0,0,18,0,22,0,13,68,0,0,0,18,0,0,0,0,0,0,0,0,61,200,"Body: Chamber of Deputies. First election after dissolution of CSFR."
-1998,0,0,0,0,20,0,14,0,0,63,0,0,0,0,0,0,0,19,0,0,0,0,0,74,200,"Body: Chamber of Deputies. Data mapping note: 19 seats recorded under US (TOP 09 not yet existed)."
-2002,0,0,0,0,21,0,41,0,0,58,0,0,0,0,0,0,0,0,10,0,0,0,0,70,200,"Body: Chamber of Deputies. KDU-ČSL and US-DEU ran as 'Koalice'; seats split per party."
-2006,0,0,0,0,13,0,26,0,0,81,0,0,0,0,0,6,0,0,0,0,0,0,74,200,"Body: Chamber of Deputies. SZ = Strana zelených (Green Party)."
-2010,0,0,0,0,0,0,26,0,0,53,0,0,0,0,0,0,41,0,0,24,0,0,0,56,200,"Body: Chamber of Deputies. VV = Věci veřejné (Public Affairs)."
-2013,47,0,0,0,14,0,33,0,0,16,0,0,0,0,0,0,26,0,0,0,14,0,0,50,200,"Body: Chamber of Deputies. ÚSVIT = Dawn of Direct Democracy."
-2017,78,0,0,0,10,0,15,0,0,25,0,22,22,0,6,0,7,0,0,0,0,0,0,15,200,"Body: Chamber of Deputies."
-2021,72,0,0,0,23,0,0,0,0,34,0,4,20,0,33,0,14,0,0,0,0,0,0,0,200,"Body: Chamber of Deputies. SPOLU and Pirates+STAN coalitions shown per party."
-2025,80,0,0,0,16,0,0,13,0,27,0,18,15,0,22,0,9,0,0,0,0,0,0,0,200,"Body: Chamber of Deputies. SPOLU total 52 split: ODS 27, KDU-ČSL 16, TOP 09 9."
+Year;Total;Body;ANO;HSD-SMS;IND;KDS;KDU-ČSL;KSČ;KSČM;Motorists;ODA;ODS;OF;Piráti;SPD;SPR-RSČ;STAN;SZ;9,00 TOP;US;US-DEU;VV;ÚSVIT;ČSL;ČSS;ČSSD;Notes
+1971;200;Czech National Council;0;0;41;0;0;132;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;15;12;0;Single-list National Front election. Source: Wikipedia/CZSO.
+1976;200;Czech National Council;0;0;37;0;0;135;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;14;14;0;Single-list National Front election. Source: Wikipedia/CZSO.
+1981;200;Czech National Council;0;0;34;0;0;137;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;15;14;0;Single-list National Front election. Source: Wikipedia/CZSO.
+1986;200;Czech National Council;0;0;35;0;0;137;0;0;0;0;0;0;0;0;0;0;0;0;0;0;0;14;14;0;Single-list National Front election. Source: Wikipedia/CZSO.
+1990;200;Czech National Council;0;23;0;4;0;33;0;0;0;0;124;0;0;0;0;0;0;0;0;0;0;16;0;0;KDU ran as a coalition (KDS+ČSL). Wikipedia gives KDS=4 seats and ČSL=16.
+1992;151;Czech National Council;0;14;0;10;15;0;10;0;14;66;0;0;0;6;0;0;0;0;0;0;0;0;0;16;"ODS–KDS ran jointly; Wikipedia lists KDS with 10 seats (rest ODS)."
+1996;200;Chamber of Deputies;0;0;0;0;18;0;22;0;13;68;0;0;0;18;0;0;0;0;0;0;0;0;0;61;First election to the Chamber of Deputies after dissolution of CSFR.
+1998;200;Chamber of Deputies;0;0;0;0;20;0;14;0;0;63;0;0;0;0;0;0;0;19;0;0;0;0;0;74;
+2002;200;Chamber of Deputies;0;0;0;0;21;0;41;0;0;58;0;0;0;0;0;0;0;0;10;0;0;0;0;70;"KDU-ČSL and US-DEU ran as 'Koalice'; seats split per party."
+2006;200;Chamber of Deputies;0;0;0;0;13;0;26;0;0;81;0;0;0;0;0;6;0;0;0;0;0;0;0;74;SZ = Strana zelených (Green Party).
+2010;200;Chamber of Deputies;0;0;0;0;0;0;26;0;0;53;0;0;0;0;0;0;41;0;0;24;0;0;0;56;VV = Věci veřejné (Public Affairs).
+2013;200;Chamber of Deputies;47;0;0;0;14;0;33;0;0;16;0;0;0;0;0;0;26;0;0;0;14;0;0;50;ÚSVIT = Dawn of Direct Democracy.
+2017;200;Chamber of Deputies;78;0;0;0;10;0;15;0;0;25;0;22;22;0;6;0;7;0;0;0;0;0;0;15;
+2021;200;Chamber of Deputies;72;0;0;0;23;0;0;0;0;34;0;4;20;0;33;0;14;0;0;0;0;0;0;0;"SPOLU and Pirates+STAN were coalitions; seats shown per party as elected."
+2025;200;Chamber of Deputies;80;0;0;0;16;0;0;13;0;27;0;18;15;0;22;0;9;0;0;0;0;0;0;0;SPOLU total 52 split: ODS 27, KDU-ČSL 16, TOP 09 9.

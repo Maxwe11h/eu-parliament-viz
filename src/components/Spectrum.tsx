@@ -18,16 +18,17 @@ export default function Spectrum({ data }: { data?: YearData }){
     const margin = 20;
     const g = svg.append('g').attr('transform',`translate(${margin},${margin})`);
     const inner = width - margin*2;
-    const x = d3.scaleLinear().domain([-10,10]).range([0, inner]);
-    const y = d3.scaleLinear().domain([-10,10]).range([inner,0]);
+  // X = economic (Left/Right), Y = social (Authoritarian/Libertarian)
+  const x = d3.scaleLinear().domain([-10,10]).range([0, inner]);
+  const y = d3.scaleLinear().domain([-10,10]).range([inner,0]);
 
     // quadrant shading (top authoritarian red/blue; bottom libertarian green/purple)
     const quad = g.append('g');
     const half = inner/2;
-    quad.append('rect').attr('x',0).attr('y',0).attr('width',half).attr('height',half).attr('fill','#ef4444').attr('fill-opacity',0.35); // top-left Authoritarian Left
-    quad.append('rect').attr('x',half).attr('y',0).attr('width',half).attr('height',half).attr('fill','#3b82f6').attr('fill-opacity',0.35); // top-right Authoritarian Right
-    quad.append('rect').attr('x',0).attr('y',half).attr('width',half).attr('height',half).attr('fill','#8dd48d').attr('fill-opacity',0.35); // bottom-left Libertarian Left (green)
-    quad.append('rect').attr('x',half).attr('y',half).attr('width',half).attr('height',half).attr('fill','#c3a3e6').attr('fill-opacity',0.35); // bottom-right Libertarian Right (purple)
+  quad.append('rect').attr('x',0).attr('y',0).attr('width',half).attr('height',half).attr('fill','#ef4444').attr('fill-opacity',0.35); // top-left Authoritarian Left
+  quad.append('rect').attr('x',half).attr('y',0).attr('width',half).attr('height',half).attr('fill','#3b82f6').attr('fill-opacity',0.35); // top-right Authoritarian Right
+  quad.append('rect').attr('x',0).attr('y',half).attr('width',half).attr('height',half).attr('fill','#8dd48d').attr('fill-opacity',0.35); // bottom-left Libertarian Left (green)
+  quad.append('rect').attr('x',half).attr('y',half).attr('width',half).attr('height',half).attr('fill','#c3a3e6').attr('fill-opacity',0.35); // bottom-right Libertarian Right (purple)
 
     // grid lines
     const grid = g.append('g').attr('stroke','#666').attr('stroke-width',0.5).attr('opacity',0.35);

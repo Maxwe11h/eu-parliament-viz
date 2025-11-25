@@ -1,5 +1,5 @@
 "use client";
-import { Box, VStack, Spinner, Text } from '@chakra-ui/react';
+import { Box, VStack, Spinner, Text, HStack } from '@chakra-ui/react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState } from 'react';
 import * as topojson from 'topojson-client';
@@ -7,6 +7,9 @@ import * as topojson from 'topojson-client';
 import worldCountries from 'world-countries';
 import { CountryKey } from '@/types';
 import Timeline from './Timeline';
+import { useData } from './DataContext';
+import { majoritySocialCategory } from '@/lib/analytics';
+import { categoryPalette } from '@/lib/colors';
 
 // ISO alpha-2 to our country keys
 const keyByISO: Partial<Record<string, CountryKey>> = {
@@ -44,6 +47,9 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
   const [hoverName,setHoverName]=useState<string|null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverPos,setHoverPos]=useState<{x:number;y:number}|null>(null);
+  // Access all data for coloring
+  const { allData } = useData();
+  const [legendOpen, setLegendOpen] = useState(true);
   // rAF throttling for tooltip position updates
   const rAF = useRef<number|null>(null);
   const pendingPos = useRef<{x:number;y:number}|null>(null);
@@ -115,8 +121,13 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
       .attr('fill',(d:any)=>{
         const alpha2 = isoNumToAlpha2[Number(d.id)];
         const key = alpha2 ? keyByISO[alpha2] : undefined;
-        // Data countries (our six) black, others light grey
-        return key ? '#000000' : '#CCCCCC';
+        if (key) {
+          const maj = majoritySocialCategory(allData, key, year);
+          const color = maj.category ? categoryPalette[maj.category] : undefined;
+          return color || '#000000';
+        }
+        // Non-EU placeholder countries
+        return '#CCCCCC';
       })
       // No stroke on individual country paths (internal borders drawn separately)
       .attr('stroke','none')
@@ -125,7 +136,18 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
         const key = alpha2 ? keyByISO[alpha2] : undefined;
         const tgt = d3.select(event.currentTarget as Element);
         if (key) {
-          tgt.attr('fill','#222222');
+          const maj = majoritySocialCategory(allData, key, year);
+          const base = maj.category ? categoryPalette[maj.category] : '#222222';
+          // Slight darken on hover
+          const darkened = d3.color(base);
+          if (darkened) {
+            darkened.opacity = 1;
+            // apply 15% darken
+            const rgb = d3.rgb(darkened as any);
+            tgt.attr('fill', d3.rgb(Math.max(0, rgb.r-30), Math.max(0, rgb.g-30), Math.max(0, rgb.b-30)).toString());
+          } else {
+            tgt.attr('fill','#222222');
+          }
         } else {
           tgt.attr('fill','#BBBBBB');
         }
@@ -143,7 +165,13 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
         const alpha2 = isoNumToAlpha2[Number(d.id)];
         const key = alpha2 ? keyByISO[alpha2] : undefined;
         const tgt = d3.select(event.currentTarget as Element);
-        tgt.attr('fill', key ? '#000000' : '#CCCCCC');
+        if (key) {
+          const maj = majoritySocialCategory(allData, key, year);
+          const color = maj.category ? categoryPalette[maj.category] : '#000000';
+          tgt.attr('fill', color);
+        } else {
+          tgt.attr('fill', '#CCCCCC');
+        }
          setHoverName(null); setHoverPos(null);
       })
       .on('click', (_: MouseEvent, d: CountryFeature)=>{
@@ -193,11 +221,11 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
       });
     svg.on('mouseup', ()=>{ dragging.current = null; });
     svg.on('mouseleave', ()=>{ dragging.current = null; });
-  },[countries, selected, scale, tx, ty, loading, error]);
+  },[countries, selected, scale, tx, ty, loading, error, year, allData]);
 
   return (
     <VStack align="stretch" spacing={0} h="100%" flex={1}>
-  <Box ref={containerRef} position="relative" flex={1} h="100%" minH={0} style={{ userSelect:'none' }}>
+  <Box ref={containerRef} position="relative" flex={1} h="100%" minH={0} border="4px solid black" style={{ userSelect:'none' }}>
         {error && <Text color="red.600" p={4}>{error}</Text>}
         {loading && !error && <Spinner position='absolute' left='50%' top='50%' />}
   <svg ref={ref} width="100%" height="100%" preserveAspectRatio="xMidYMid meet" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} style={{ display:'block', background:'#FFFFFF', visibility: loading||error?'hidden':'visible' }} />
@@ -206,15 +234,67 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
       {hoverName}
     </Box>
   )}
-  {/* Zoom controls moved to top-left to avoid tooltip overlap */}
-  <Box position="absolute" top={8} left={8} display="flex" gap={2} zIndex={6}>
-          <button className="btn" aria-label="Zoom in" onClick={()=>setScale((s:number)=>Math.min(4,s*1.2))}>+</button>
-          <button className="btn" aria-label="Zoom out" onClick={()=>setScale((s:number)=>Math.max(BASE_SCALE,s/1.2))}>-</button>
+  {/* Title overlay and legend */}
+  <Box position="absolute" top={8} left={8} display="flex" flexDir="column" gap={2} zIndex={6}>
+          <Box bg="white" border="2px solid black" borderRadius="10px" boxShadow="md" px={4} py={2}>
+            <Text fontWeight="semibold">Parliamentary Composition Overview</Text>
+          </Box>
+          <Box
+            bg="white"
+            border="2px solid black"
+            borderRadius="10px"
+            boxShadow="sm"
+            px={3}
+            py={2}
+            display="inline-block"
+            alignSelf="flex-start"
+            cursor="pointer"
+            onClick={()=>setLegendOpen(o=>!o)}
+            aria-expanded={legendOpen}
+            w="fit-content"
+          >
+            <HStack spacing={2} mb={legendOpen ? 2 : 0}>
+              <Box as="span" aria-hidden="true" width="10px" height="10px" display="inline-block" transform={legendOpen? 'rotate(90deg)' : 'rotate(0deg)'} transition="transform 120ms ease">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l8 7-8 7z"/></svg>
+              </Box>
+              <Text fontWeight="semibold" fontSize="sm">Political Alignment</Text>
+            </HStack>
+            {legendOpen && (
+              <VStack align="start" spacing={1}>
+                {(['Far Left','Left','Centre-Left','Centre','Centre-Right','Right','Far Right'] as const).map(cat=> (
+                  <HStack key={cat} spacing={2}>
+                    <Box width="12px" height="12px" borderRadius="2px" bg={categoryPalette[cat]} border="1px solid black" />
+                    <Text fontSize="sm">{cat}</Text>
+                  </HStack>
+                ))}
+              </VStack>
+            )}
+          </Box>
         </Box>
         {/* Timeline overlay (respect right offset when a panel is open) */}
         <Box position="absolute" left={0} right={timelineRightOffset ?? 0} bottom={0} px={4} pb={3} display="flex" justifyContent="center" zIndex={20} pointerEvents="auto" overflow="visible" style={{ transition: 'right 220ms ease-out' }}>
-          <Box maxW="980px" width="100%">
-            <Timeline year={year} onChange={onYearChange} />
+          <Box maxW="980px" width="100%" display="flex" alignItems="center" gap={2}>
+            {/* Inline year label */}
+            <Box
+              bg="white"
+              color="black"
+              border="2px solid black"
+              borderRadius="12px"
+              boxShadow="sm"
+              px={3}
+              height="54px" /* Match Timeline outer HStack height */
+              display="flex"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="flex-start"
+              minW="76px"
+            >
+              <Text fontWeight="bold" fontSize="md" lineHeight="1" mb={0}>{year}</Text>
+              <Text fontSize="xs" color="gray.600" lineHeight="1">Selected Year</Text>
+            </Box>
+            <Box flex={1} minW={0}>
+              <Timeline year={year} onChange={onYearChange} />
+            </Box>
           </Box>
         </Box>
       </Box>
