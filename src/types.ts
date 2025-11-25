@@ -1,4 +1,22 @@
-export type CountryKey = 'france' | 'germany' | 'ireland' | 'italy' | 'portugal' | 'spain';
+export type CountryKey =
+  | 'france'
+  | 'germany'
+  | 'ireland'
+  | 'italy'
+  | 'portugal'
+  | 'spain'
+  // Newly added countries
+  | 'austria'
+  | 'belgium'
+  | 'bulgaria'
+  | 'croatia'
+  | 'cyprus'
+  | 'czech-republic'
+  | 'denmark'
+  | 'estonia'
+  | 'finland'
+  | 'greece'
+  | 'hungary';
 
 export type ParliamentRow = {
   Year: number;

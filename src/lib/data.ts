@@ -7,7 +7,10 @@ import { colorFromCategories } from './colors';
 import fs from 'fs';
 import path from 'path';
 
-const countries: CountryKey[] = ['france','germany','ireland','italy','portugal','spain'];
+const countries: CountryKey[] = [
+  'france', 'germany', 'ireland', 'italy', 'portugal', 'spain',
+  'austria','belgium','bulgaria','croatia','cyprus','czech-republic','denmark','estonia','finland','greece','hungary'
+];
 export { countries };
 
 function readCsv(country: CountryKey, suffix: 'parliament' | 'political-compass'): string {
@@ -18,19 +21,37 @@ function readCsv(country: CountryKey, suffix: 'parliament' | 'political-compass'
 
 export function loadCompass(country: CountryKey): CompassRow[] {
   const raw = readCsv(country, 'political-compass');
-  const parsed = Papa.parse(raw, { header: true, dynamicTyping: true });
-  return (parsed.data as any[]).filter(r=>r && r.Acronym).map(r=>({
-    Acronym: r.Acronym,
-    NativeName: r.NativeName,
-    EnglishName: r.EnglishName,
-    EconRating: Number(r.EconRating),
-    SocialRating: Number(r.SocialRating),
-    EconCategory: r.EconCategory,
-    SocialCategory: r.SocialCategory,
-    SocialCategoryExtended: r.SocialCategoryExtended,
-    Notes: r.Notes,
-    color: colorFromCategories(r.EconCategory, r.SocialCategory, r.Acronym)
-  }));
+  // Some country compass CSVs have each entire line wrapped in quotes, e.g. "Acronym,NativeName,..." including header.
+  // Detect if first non-empty line starts and ends with a quote and contains commas inside; if so strip outer quotes per line.
+  let cleaned = raw;
+  const lines = raw.split(/\r?\n/).filter(l=>l.trim().length>0);
+  if (lines.length > 0) {
+    const header = lines[0].trim();
+    const fullyQuoted = header.startsWith('"') && header.endsWith('"') && header.includes(',');
+    if (fullyQuoted) {
+      cleaned = lines
+        .map(l => {
+          const t = l.trim();
+          return (t.startsWith('"') && t.endsWith('"')) ? t.slice(1, -1) : l; // remove surrounding quotes only
+        })
+        .join('\n');
+    }
+  }
+  const parsed = Papa.parse(cleaned, { header: true, dynamicTyping: true });
+  return (parsed.data as any[])
+    .filter(r => r && r.Acronym)
+    .map(r => ({
+      Acronym: String(r.Acronym).trim(),
+      NativeName: String(r.NativeName || '').trim(),
+      EnglishName: String(r.EnglishName || '').trim(),
+      EconRating: Number(r.EconRating),
+      SocialRating: Number(r.SocialRating),
+      EconCategory: String(r.EconCategory || '').trim(),
+      SocialCategory: String(r.SocialCategory || '').trim(),
+      SocialCategoryExtended: r.SocialCategoryExtended,
+      Notes: r.Notes,
+      color: colorFromCategories(r.EconCategory, r.SocialCategory, r.Acronym)
+    }));
 }
 
 export function loadParliament(country: CountryKey): YearData[] {
@@ -58,23 +79,61 @@ export function loadParliament(country: CountryKey): YearData[] {
   return yearData.sort((a,b)=>a.year-b.year);
 }
 
+// Canonicalize acronyms so that differences in separators, case, diacritics and parentheses don't break joins.
+function canonical(acronym: string): string {
+  let s = acronym.toUpperCase();
+  // Drop parenthetical content entirely (e.g. "German minority (MNOÖ)" -> "GERMAN MINORITY")
+  s = s.replace(/\(.*?\)/g, '');
+  // Remove diacritics
+  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // Remove all non alphanumeric characters
+  s = s.replace(/[^A-Z0-9]/g, '');
+  return s;
+}
+
+// Optional explicit alias map for edge cases (keys & values are canonical forms)
+const aliasMap: Record<string, string> = {
+  // Hungary specific: German minority seat naming variations
+  GERMANMINORITY: 'GERMANMINORITY',
+};
+
 export function mergeYearData(country: CountryKey): YearData[] {
   const compass = loadCompass(country);
   const parliament = loadParliament(country);
-  const compassMap = new Map(compass.map(c=>[c.Acronym.toUpperCase(), c]));
+
+  // Build lookup by canonical acronym (include EnglishName as secondary key if unique)
+  const compassMap = new Map<string, CompassRow>();
+  for (const c of compass) {
+    const acr = canonical(c.Acronym);
+    if (!compassMap.has(acr)) compassMap.set(acr, c);
+    // Also index EnglishName stripped if distinct (handles cases where parliament uses full name as acronym)
+    const eng = c.EnglishName ? canonical(c.EnglishName) : undefined;
+    if (eng && !compassMap.has(eng)) compassMap.set(eng, c);
+  }
+
   for (const y of parliament) {
     for (const p of y.parties) {
-      const info = compassMap.get(p.acronym.toUpperCase());
+      const cand = canonical(p.acronym);
+      const alias = aliasMap[cand];
+      const info = compassMap.get(alias || cand);
       if (info) {
-        p.englishName = info.EnglishName;
-        p.econ = info.EconRating;
-        p.social = info.SocialRating;
+        p.englishName = info.EnglishName || info.NativeName || p.acronym;
+        p.econ = Number.isFinite(info.EconRating) ? info.EconRating : undefined;
+        p.social = Number.isFinite(info.SocialRating) ? info.SocialRating : undefined;
         p.color = info.color || p.color;
         p.socialCategory = info.SocialCategory;
+      } else {
+        // No ideological data found: leave econ/social undefined and keep neutral grey color for clarity
+        p.englishName = p.englishName || p.acronym; // ensure name displayed
       }
     }
-    // order parties ideologically left(-econ) to right(+econ) fallback by color
-    y.parties.sort((a,b)=> (a.econ??0)-(b.econ??0));
+    // Order parties ideologically left(-econ) to right(+econ); fall back to seat count if no econ data
+    y.parties.sort((a, b) => {
+      const ae = a.econ ?? 0;
+      const be = b.econ ?? 0;
+      if (ae === be) return (b.votes ?? 0) - (a.votes ?? 0);
+      return ae - be;
+    });
   }
   return parliament;
 }

@@ -97,9 +97,11 @@ export default function Spectrum({ data }: { data?: YearData }){
 
     circles.on('mouseenter', function (event, d: PartyPoint){
       const header = d.englishName ?? d.acronym;
-      const sub = `${d.socialCategory ?? 'Uncategorized'} • ${d.pct.toFixed(1)}%`;
+        const acronymLine = d.englishName && d.englishName !== d.acronym ? `<div style="color:#bbb;font-size:11px;">${d.acronym}</div>` : '';
+        const sub = `${d.socialCategory ?? 'Uncategorized'} • ${d.pct.toFixed(1)}%`;
       tooltip.style('opacity','1').style('width','').html(`
         <div style="font-weight:700;color:#fff;text-overflow:ellipsis;overflow:hidden;max-width:100%">${header}</div>
+          ${acronymLine}
         <div style="color:${d.color};text-overflow:ellipsis;overflow:hidden;max-width:100%;margin-top:4px">${sub}</div>
       `);
       // no width lock: each hover sizes independently

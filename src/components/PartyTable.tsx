@@ -21,15 +21,22 @@ export default function PartyTable({ data, year, title = true }: { data?: YearDa
             .filter(p=> (p.votes ?? 0) > 0)
             .slice()
             .sort((a,b)=> (b.votes ?? 0) - (a.votes ?? 0))
-            .map(p=> (
-            <Tr key={p.acronym} bg={p.color+"20"} borderBottom="1px solid" borderColor="gray.300">
-              <Td>
-                <Text fontWeight="medium">{p.englishName ?? p.acronym}</Text>
-              </Td>
-              <Td isNumeric>{p.votes}</Td>
-              <Td isNumeric>{p.pct.toFixed(1)}</Td>
-            </Tr>
-          ))}
+            .map(p=> {
+              const name = p.englishName ?? p.acronym;
+              const showAcronym = p.englishName && p.englishName !== p.acronym;
+              return (
+                <Tr key={p.acronym} bg={p.color+"20"} borderBottom="1px solid" borderColor="gray.300">
+                  <Td>
+                    <Text fontWeight="medium" lineHeight="1.15">{name}</Text>
+                    {showAcronym && (
+                      <Text fontSize="xs" color="gray.600" lineHeight="1.05">{p.acronym}</Text>
+                    )}
+                  </Td>
+                  <Td isNumeric>{p.votes}</Td>
+                  <Td isNumeric>{p.pct.toFixed(1)}</Td>
+                </Tr>
+              );
+            })}
         </Tbody>
       </Table>
     </Box>

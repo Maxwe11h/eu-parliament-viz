@@ -10,7 +10,9 @@ import Timeline from './Timeline';
 
 // ISO alpha-2 to our country keys
 const keyByISO: Partial<Record<string, CountryKey>> = {
-  FR: 'france', DE: 'germany', IE: 'ireland', IT: 'italy', PT: 'portugal', ES: 'spain'
+  FR: 'france', DE: 'germany', IE: 'ireland', IT: 'italy', PT: 'portugal', ES: 'spain',
+  AT: 'austria', BE: 'belgium', BG: 'bulgaria', HR: 'croatia', CY: 'cyprus', CZ: 'czech-republic',
+  DK: 'denmark', EE: 'estonia', FI: 'finland', GR: 'greece', HU: 'hungary'
 };
 
 // Build a mapping from numeric (cca3 numeric) to alpha-2 using world-countries
@@ -29,7 +31,7 @@ for (const c of worldCountries) {
 // Explicitly exclude Russia (RU) from rendering despite being partly in Europe region
 europeanAlpha2.delete('RU');
 // Explicit ensure our six exist even if mapping fails.
-['FR','DE','IE','IT','PT','ES'].forEach(code=>{ /* no-op ensure presence */ });
+['FR','DE','IE','IT','PT','ES','AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR','HU'].forEach(code=>{ /* ensure presence */ });
 
 const WIDTH = 1200; const HEIGHT = 700; // logical viewport
 
@@ -92,7 +94,8 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
   // Slightly closer base zoom (increase scale) and slight northward shift for better Europe centering
   // Shift projection slightly right and down by adjusting translate
   // Restore fixed projection (zoom handled via <g> transform)
-  const projection = d3.geoMercator().center([15,52]).scale(650).translate([WIDTH/2 + 60, HEIGHT/2 + 40]);
+  // Adjusted: slightly zoomed out (scale 600 instead of 650) and shifted upward (translate Y +10 instead of +40)
+  const projection = d3.geoMercator().center([15,52]).scale(600).translate([WIDTH/2 + 60, HEIGHT/2 + 30]);
   const path = d3.geoPath(projection as any);
 
   // draw countries
