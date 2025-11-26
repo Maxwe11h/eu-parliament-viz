@@ -235,9 +235,9 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
     </Box>
   )}
   {/* Title overlay and legend */}
-  <Box position="absolute" top={8} left={8} display="flex" flexDir="column" gap={2} zIndex={6}>
+  <Box position="absolute" top={4} left={4} display="flex" flexDir="column" gap={2} zIndex={6}>
           <Box bg="white" border="2px solid black" borderRadius="10px" boxShadow="md" px={4} py={2}>
-            <Text fontWeight="semibold">Parliamentary Composition Overview</Text>
+            <Text fontWeight="semibold">European Parliamentary Visualizer</Text>
           </Box>
           <Box
             bg="white"
@@ -257,7 +257,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
               <Box as="span" aria-hidden="true" width="10px" height="10px" display="inline-block" transform={legendOpen? 'rotate(90deg)' : 'rotate(0deg)'} transition="transform 120ms ease">
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l8 7-8 7z"/></svg>
               </Box>
-              <Text fontWeight="semibold" fontSize="sm">Political Alignment</Text>
+              <Text fontWeight="semibold" fontSize="sm">Political Alignment Legend</Text>
             </HStack>
             {legendOpen && (
               <VStack align="start" spacing={1}>
