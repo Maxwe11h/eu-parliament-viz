@@ -20,6 +20,26 @@ export const countryLabels: Record<CountryKey, string> = {
   hungary: 'Hungary'
 };
 
+export const countryIsoCodes: Record<CountryKey, string> = {
+  france: 'FR',
+  germany: 'DE',
+  ireland: 'IE',
+  italy: 'IT',
+  portugal: 'PT',
+  spain: 'ES',
+  austria: 'AT',
+  belgium: 'BE',
+  bulgaria: 'BG',
+  croatia: 'HR',
+  cyprus: 'CY',
+  'czech-republic': 'CZ',
+  denmark: 'DK',
+  estonia: 'EE',
+  finland: 'FI',
+  greece: 'GR',
+  hungary: 'HU'
+};
+
 export const orderedCountryKeys: CountryKey[] = [
   'france',
   'germany',
@@ -42,4 +62,28 @@ export const orderedCountryKeys: CountryKey[] = [
 
 export function getCountryLabel(key: CountryKey) {
   return countryLabels[key] || key;
+}
+
+export function getCountryAbbreviation(key: CountryKey) {
+  const iso = countryIsoCodes[key];
+  if (iso) return iso;
+  const label = getCountryLabel(key);
+  return (label.slice(0, 2) || key.slice(0, 2)).toUpperCase();
+}
+
+export function getCountryFlagEmoji(key: CountryKey) {
+  const iso = countryIsoCodes[key];
+  if (!iso) return '🏳️';
+  return iso
+    .toUpperCase()
+    .split('')
+    .map(char => String.fromCodePoint(127397 + char.charCodeAt(0)))
+    .join('');
+}
+
+export function getCountryFlagUrl(key: CountryKey, width: 40 | 80 | 160 = 80) {
+  const iso = countryIsoCodes[key]?.toLowerCase();
+  if (!iso) return undefined;
+  const safeWidth = width || 80;
+  return `https://flagcdn.com/w${safeWidth}/${iso}.png`;
 }

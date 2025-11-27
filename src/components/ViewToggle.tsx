@@ -70,8 +70,8 @@ export default function ViewToggle({ width = 320 }: ViewToggleProps) {
       gap={`${TOGGLE_PADDING}px`}
       role="group"
     >
-      {renderButton('Map View', 'map')}
-      {renderButton('Comparison View', 'comparison')}
+      {renderButton('Map', 'map')}
+      {renderButton('Compare', 'comparison')}
     </Box>
   );
 }

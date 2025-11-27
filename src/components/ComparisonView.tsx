@@ -30,13 +30,16 @@ import ElectionDonut from './ElectionDonut';
 import Spectrum from './Spectrum';
 import LeaningBarChart from './LeaningBarChart';
 import PartyTable from './PartyTable';
+import EuropeanComparison from './EuropeanComparison';
 
 const COLUMN_COUNT = 3;
+type ComparisonMode = 'countries' | 'europe';
 
 export default function ComparisonView() {
   const { allData, year, setYear } = useData();
   const initialSelections = useMemo(() => Array.from({ length: COLUMN_COUNT }, () => null as CountryKey | null), []);
   const [selectedCountries, setSelectedCountries] = useState<(CountryKey | null)[]>(initialSelections);
+  const [mode, setMode] = useState<ComparisonMode>('countries');
 
   const orderedKeys = useMemo(() => {
     const present = new Set(Object.keys(allData));
@@ -101,7 +104,10 @@ export default function ComparisonView() {
           <Box>
             <Heading as="h1" size="md" textAlign="center">European Parliamentary Visualizer</Heading>
           </Box>
-          <ViewToggle width={320} />
+          <Flex gap={3} flexWrap="wrap" justify="flex-end">
+            <ViewToggle width={280} />
+            <ComparisonModeToggle value={mode} onChange={next => setMode(next)} />
+          </Flex>
         </Flex>
         <Box mt={4}>
           <ComparisonTimeline year={year} onChange={setYear} years={timelineYears} />
@@ -109,27 +115,31 @@ export default function ComparisonView() {
       </Box>
 
       <Box flex="1" overflowY="auto">
-        <Flex align="stretch" minH="100%" width="100%">
-          {columnConfigs.map((config, idx) => (
-            <Box
-              key={idx}
-              flex="1"
-              minW={0}
-              display="flex"
-              flexDirection="column"
-            >
-              <CountryColumn
-                country={config.country}
-                data={config.data}
-                year={year}
-                options={config.options}
-                allData={allData}
-                onSelect={country => handleSelectCountry(idx, country)}
-                onClear={() => handleClearCountry(idx)}
-              />
-            </Box>
-          ))}
-        </Flex>
+        {mode === 'countries' ? (
+          <Flex align="stretch" minH="100%" width="100%">
+            {columnConfigs.map((config, idx) => (
+              <Box
+                key={idx}
+                flex="1"
+                minW={0}
+                display="flex"
+                flexDirection="column"
+              >
+                <CountryColumn
+                  country={config.country}
+                  data={config.data}
+                  year={year}
+                  options={config.options}
+                  allData={allData}
+                  onSelect={country => handleSelectCountry(idx, country)}
+                  onClear={() => handleClearCountry(idx)}
+                />
+              </Box>
+            ))}
+          </Flex>
+        ) : (
+          <EuropeanComparison allData={allData} year={year} />
+        )}
       </Box>
     </Box>
   );
@@ -369,4 +379,54 @@ function ComparisonTimeline({ year, onChange, years }: { year: number; onChange:
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+const MODE_OPTIONS: Array<{ value: ComparisonMode; label: string }> = [
+  { value: 'countries', label: 'Country' },
+  { value: 'europe', label: 'Europe' }
+];
+
+function ComparisonModeToggle({ value, onChange }: { value: ComparisonMode; onChange: (next: ComparisonMode) => void }) {
+  return (
+    <Box
+      display="inline-flex"
+  width={{ base: '100%', md: '280px' }}
+      border="2px solid black"
+      borderRadius="20px"
+      bg="white"
+      padding="4px"
+      gap="4px"
+      boxShadow="sm"
+    >
+      {MODE_OPTIONS.map(option => {
+        const isActive = value === option.value;
+        return (
+          <Button
+            key={option.value}
+            onClick={() => onChange(option.value)}
+            flex={1}
+            variant="unstyled"
+            borderRadius="16px"
+            border="1px solid"
+            borderColor={isActive ? 'black' : 'gray.200'}
+            bg={isActive ? 'black' : 'transparent'}
+            color={isActive ? 'white' : 'gray.800'}
+            py={2}
+            px={4}
+            height="40px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            transition="background 150ms ease, color 150ms ease, border-color 150ms ease"
+            _hover={{ bg: isActive ? 'black' : 'gray.50' }}
+            aria-pressed={isActive}
+          >
+            <Text fontWeight="semibold" fontSize="sm">
+              {option.label}
+            </Text>
+          </Button>
+        );
+      })}
+    </Box>
+  );
 }
