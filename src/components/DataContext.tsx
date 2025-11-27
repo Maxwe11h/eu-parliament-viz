@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CountryKey, YearData } from '@/types';
 
 type DataContextValue = {
@@ -19,6 +19,7 @@ export function DataProvider({ children, allData }: { children: React.ReactNode;
   const [yearState,setYearState] = useState<number>(2018);
   const router = useRouter();
   const params = useSearchParams();
+  const pathname = usePathname();
 
   // Initialize from URL
   useEffect(()=>{
@@ -34,8 +35,9 @@ export function DataProvider({ children, allData }: { children: React.ReactNode;
     const query = new URLSearchParams();
     if (country) query.set('country', country);
     query.set('year', String(yearState));
-    router.replace(`/?${query.toString()}`);
-  },[country, yearState, router]);
+    const targetPath = pathname || '/';
+    router.replace(`${targetPath}?${query.toString()}`);
+  },[country, yearState, router, pathname]);
 
   const setYear = (y:number) => setYearState(y);
   const currentYearData = useMemo(()=>{

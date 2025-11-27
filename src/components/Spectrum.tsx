@@ -6,7 +6,7 @@ import { YearData } from '@/types';
 
 type PartyPoint = NonNullable<YearData>['parties'][number];
 
-export default function Spectrum({ data }: { data?: YearData }){
+export default function Spectrum({ data, size = 520 }: { data?: YearData; size?: number }){
   const ref = useRef<SVGSVGElement>(null);
   useEffect(()=>{
     const svg = d3.select(ref.current!);
@@ -14,7 +14,7 @@ export default function Spectrum({ data }: { data?: YearData }){
   if (!data) return;
   const parties = data.parties.filter(p => (p.votes ?? 0) > 0);
   if (parties.length === 0) return;
-    const width = 520, height = 520; // make square for compass grid
+    const width = size, height = size; // make square for compass grid
     const margin = 20;
     const g = svg.append('g').attr('transform',`translate(${margin},${margin})`);
     const inner = width - margin*2;
@@ -122,12 +122,12 @@ export default function Spectrum({ data }: { data?: YearData }){
     });
     // cleanup tooltip on unmount or data change
     return () => { try { tooltip.remove(); } catch {} };
-  },[data]);
+  },[data, size]);
   return (
     <Box p={2} m={0}>
       <Text fontWeight="bold" px={3} mb={0} lineHeight="1.1">Political Spectrum</Text>
   <Text fontSize="xs" color="gray.600" px={3} mb={3} mt={0} lineHeight="1.1">X-axis displays social policy alignment and Y-axis displays economic policy alignment</Text>
-      <svg ref={ref} width="100%" viewBox="0 0 520 520" />
+      <svg ref={ref} width="100%" viewBox={`0 0 ${size} ${size}`} />
     </Box>
   );
 }

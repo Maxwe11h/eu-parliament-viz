@@ -4,8 +4,10 @@ import { CountryKey, YearData } from '@/types';
 const LEFT_GROUP = new Set(['Far Left', 'Left', 'Centre-Left', 'Centre-left']);
 const CENTRE_GROUP = new Set(['Centre']);
 const RIGHT_GROUP = new Set(['Centre-Right', 'Centre-right', 'Right', 'Far Right']);
+const DETAILED_LEANINGS = ['Far Left', 'Left', 'Centre-Left', 'Centre', 'Centre-Right', 'Right', 'Far Right'] as const;
+type DetailedLeaning = (typeof DETAILED_LEANINGS)[number];
 
-function normalizeCategory(cat?: string): string | undefined {
+export function normalizeSocialCategory(cat?: string): string | undefined {
   if (!cat) return undefined;
   if (/^centre-?left$/i.test(cat)) return 'Centre-Left';
   if (/^centre-?right$/i.test(cat)) return 'Centre-Right';
@@ -34,7 +36,7 @@ export function majoritySocialCategory(
     const votes = p.votes || 0;
     totalVotes += votes;
     if (!votes) continue;
-    const norm = normalizeCategory(p.socialCategory);
+  const norm = normalizeSocialCategory(p.socialCategory);
     if (!norm) continue;
     subTotals.set(norm, (subTotals.get(norm) || 0) + votes);
     if (LEFT_GROUP.has(norm)) leftTotal += votes;
@@ -58,4 +60,74 @@ export function majoritySocialCategory(
 
   const percentage = totalVotes > 0 ? (bestVotes / totalVotes) * 100 : 0;
   return { category: bestSub, totalWeight: bestVotes, partyName: bestSub, percentage, collection: winner.name };
+}
+
+export function getYearDataForCountry(
+  all: Record<CountryKey, YearData[]>,
+  country: CountryKey,
+  year: number
+): YearData | undefined {
+  const arr = all[country];
+  if (!arr || arr.length === 0) return undefined;
+  const exact = arr.find(d => d.year === year);
+  if (exact) return exact;
+  const previous = [...arr].filter(d => d.year <= year).pop();
+  return previous ?? arr[0];
+}
+
+export function getLeaningTotals(data?: YearData): Array<{ collection: 'Left'|'Centre'|'Right'; votes: number; percentage: number }> {
+  if (!data) return [];
+  const totals = {
+    Left: 0,
+    Centre: 0,
+    Right: 0
+  } as Record<'Left'|'Centre'|'Right', number>;
+
+  for (const party of data.parties) {
+    const votes = party.votes || 0;
+    if (!votes) continue;
+    const norm = normalizeSocialCategory(party.socialCategory);
+    if (!norm) continue;
+    if (LEFT_GROUP.has(norm)) totals.Left += votes;
+    else if (CENTRE_GROUP.has(norm)) totals.Centre += votes;
+    else if (RIGHT_GROUP.has(norm)) totals.Right += votes;
+  }
+
+  const totalVotes = totals.Left + totals.Centre + totals.Right;
+  if (totalVotes === 0) return [];
+
+  return (['Left','Centre','Right'] as const).map(collection => ({
+    collection,
+    votes: totals[collection],
+    percentage: totalVotes ? (totals[collection] / totalVotes) * 100 : 0
+  })).filter(item => item.votes > 0);
+}
+
+export function getDetailedLeaningTotals(data?: YearData): Array<{ label: DetailedLeaning; votes: number; percentage: number }> {
+  const base = DETAILED_LEANINGS.map(label => ({ label, votes: 0, percentage: 0 }));
+  if (!data) return base;
+
+  const totals = DETAILED_LEANINGS.reduce((acc, label) => {
+    acc[label] = 0;
+    return acc;
+  }, {} as Record<DetailedLeaning, number>);
+
+  let totalVotes = 0;
+  for (const party of data.parties) {
+    const votes = party.votes || 0;
+    if (!votes) continue;
+    totalVotes += votes;
+    const norm = normalizeSocialCategory(party.socialCategory);
+    if (norm && (totals as Record<string, number>)[norm] !== undefined) {
+      totals[norm as DetailedLeaning] += votes;
+    }
+  }
+
+  if (totalVotes === 0) return base;
+
+  return DETAILED_LEANINGS.map(label => ({
+    label,
+    votes: totals[label],
+    percentage: totalVotes ? (totals[label] / totalVotes) * 100 : 0
+  }));
 }

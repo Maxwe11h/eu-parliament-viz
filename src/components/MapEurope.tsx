@@ -1,10 +1,11 @@
 "use client";
-import { Box, VStack, Spinner, Text, HStack } from '@chakra-ui/react';
+import { Box, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState } from 'react';
 import * as topojson from 'topojson-client';
 // world-countries provides metadata to determine European countries
 import worldCountries from 'world-countries';
+import ViewToggle from './ViewToggle';
 import { CountryKey } from '@/types';
 import Timeline from './Timeline';
 import { useData } from './DataContext';
@@ -223,6 +224,8 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
     svg.on('mouseleave', ()=>{ dragging.current = null; });
   },[countries, selected, scale, tx, ty, loading, error, year, allData]);
 
+  const overlayBadgeWidth = 320;
+
   return (
     <VStack align="stretch" spacing={0} h="100%" flex={1}>
   <Box ref={containerRef} position="relative" flex={1} h="100%" minH={0} border="4px solid black" style={{ userSelect:'none' }}>
@@ -236,9 +239,19 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
   )}
   {/* Title overlay and legend */}
   <Box position="absolute" top={4} left={4} display="flex" flexDir="column" gap={2} zIndex={6}>
-          <Box bg="white" border="2px solid black" borderRadius="10px" boxShadow="md" px={4} py={2}>
+          <Box
+            bg="white"
+            border="2px solid black"
+            borderRadius="18px"
+            boxShadow="md"
+            px={4}
+            py={2}
+            width={`${overlayBadgeWidth}px`}
+            textAlign="center"
+          >
             <Text fontWeight="semibold">European Parliamentary Visualizer</Text>
           </Box>
+          <ViewToggle width={`${overlayBadgeWidth}px`} />
           <Box
             bg="white"
             border="2px solid black"

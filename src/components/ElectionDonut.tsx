@@ -120,12 +120,14 @@ export default function ElectionDonut({ data }: { data?: YearData }){
   },[socialSlices]);
 
   return (
-    <Box>
+    <Box width="100%">
       <HStack mb={0} justify="space-between">
         <Text fontWeight="bold" fontSize="md" lineHeight="1.1">Election Results</Text>
       </HStack>
       <Text fontSize="xs" color="gray.600" mb={1} mt={0} lineHeight="1.1">Visualised by social alignment</Text>
-      <svg ref={ref} width="100%" viewBox="0 0 520 280" />
+      <Box width="100%" maxW="460px" mx="auto">
+        <svg ref={ref} width="100%" viewBox="0 0 520 280" preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }} />
+      </Box>
     </Box>
   );
 }
