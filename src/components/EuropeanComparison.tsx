@@ -20,6 +20,7 @@ type SegmentKey = (typeof LEANING_SEGMENTS)[number];
 type EuropeanComparisonProps = {
   allData: Record<CountryKey, YearData[]>;
   year: number;
+  onToggleCountry?: (country: CountryKey) => void;
 };
 
 type BubbleDatum = {
@@ -49,11 +50,12 @@ type GeometrySnapshot = {
   placement: Map<CountryKey, PlacementSnapshot>;
 };
 
-const BUBBLE_MIN = 28;
-const BUBBLE_MAX = 74;
+const BUBBLE_MIN = 20;
+const BUBBLE_MAX = 60;
 const MIN_CANVAS_HEIGHT = 420;
 const BORDER_MARGIN = 8;
 const COLLISION_PADDING = 1.5;
+const VISUAL_MAX_WIDTH = 900;
 
 const FLAG_BACKGROUND_OVERRIDES: Partial<Record<CountryKey, { backgroundSize?: string; backgroundPosition?: string }>> = {
   ireland: {
@@ -62,10 +64,11 @@ const FLAG_BACKGROUND_OVERRIDES: Partial<Record<CountryKey, { backgroundSize?: s
   }
 };
 
-export default function EuropeanComparison({ allData, year }: EuropeanComparisonProps) {
+export default function EuropeanComparison({ allData, year, onToggleCountry }: EuropeanComparisonProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const previousPlacementRef = useRef<Map<CountryKey, PlacementSnapshot>>(new Map());
   const [width, setWidth] = useState(0);
+  const drawingWidth = width > 0 ? Math.min(width, VISUAL_MAX_WIDTH) : 0;
 
   useEffect(() => {
     const node = canvasRef.current;
@@ -102,7 +105,7 @@ export default function EuropeanComparison({ allData, year }: EuropeanComparison
   }, [allData, displayOrder, year]);
 
   const geometry = useMemo<GeometrySnapshot>(() => {
-    if (!width) {
+    if (!drawingWidth) {
       return {
         positions: [] as BubbleWithPosition[],
         arcs: [],
@@ -117,17 +120,17 @@ export default function EuropeanComparison({ allData, year }: EuropeanComparison
     }
 
     const previousPlacement = previousPlacementRef.current;
-    const wedgeAngle = Math.PI / LEANING_SEGMENTS.length;
+  const wedgeAngle = Math.PI / LEANING_SEGMENTS.length;
     const orientationOffset = Math.PI / 2; // rotate semicircle vertically
     const margin = 48;
-    const maxRadiusFromWidth = Math.max(width / 2 - margin, 180);
+  const maxRadiusFromWidth = Math.max(drawingWidth / 2 - margin, 180);
     const outerRadius = Math.min(maxRadiusFromWidth, 540);
     const innerRadius = outerRadius * 0.22; // smaller inner circle
-    const topMargin = 40;
-    const bottomMargin = 20;
+    const topMargin = 30;
+    const bottomMargin = 5;
     const cy = outerRadius + topMargin;
     const canvasHeight = Math.max(MIN_CANVAS_HEIGHT, cy + bottomMargin);
-    const cx = width / 2;
+  const cx = drawingWidth / 2;
 
     const arcGen = d3
       .arc<{ startAngle: number; endAngle: number }>()
@@ -149,7 +152,7 @@ export default function EuropeanComparison({ allData, year }: EuropeanComparison
     const labelRadius = outerRadius + 52;
     const labels = arcs.map(arc => {
       const mid = (arc.startAngle + arc.endAngle) / 2 - orientationOffset;
-      const yOffset = arc.segment === 'Centre' ? +25 : 0;
+      const yOffset = arc.segment === 'Centre' ? +32 : 0;
       return {
         segment: arc.segment,
         x: cx + labelRadius * Math.cos(mid),
@@ -264,9 +267,12 @@ export default function EuropeanComparison({ allData, year }: EuropeanComparison
       innerRadius,
       placement: placementSnapshot
     };
-  }, [bubbles, width, displayOrder]);
+  }, [bubbles, drawingWidth, displayOrder]);
 
   const { positions: layout, arcs, labels, height: canvasHeight, centerX, centerY, placement } = geometry;
+  const hasMeasurement = width > 0;
+  const innerWidthPx = hasMeasurement ? `${drawingWidth}px` : '100%';
+  const svgWidthValue = hasMeasurement ? drawingWidth : Math.max(width, 1) || 1;
 
   useEffect(() => {
     previousPlacementRef.current = placement;
@@ -275,49 +281,53 @@ export default function EuropeanComparison({ allData, year }: EuropeanComparison
   return (
     <Box px={{ base: 2, md: 4 }} py={{ base: 4, md: 6 }} width="100%">
       <Box border="2px solid" borderColor="black" borderRadius="32px" bg="white" overflow="hidden">
-        <Box borderBottom="2px solid" borderColor="black" px={{ base: 4, md: 6 }} py={{ base: 4, md: 5 }}>
+        <Box borderBottom="2px solid" borderColor="black" px={{ base: 4, md: 6 }} py={2}>
           <Text fontWeight="bold" fontSize="lg">European Comparison</Text>
           <Text fontSize="sm" color="gray.600">Countries grouped by majority social alignment</Text>
         </Box>
         <Box px={{ base: 2, md: 6 }} py={{ base: 4, md: 6 }}>
           <Box position="relative" height={`${canvasHeight}px`} ref={canvasRef}>
-            <Box position="absolute" inset={0} pointerEvents="none">
-              <svg
-                width="100%"
-                height="100%"
-                viewBox={`0 0 ${Math.max(width, 1)} ${canvasHeight}`}
-                preserveAspectRatio="xMidYMid meet"
-              >
-                <g transform={`translate(${centerX}, ${centerY})`}>
-                  {arcs.map(arc => (
-                    <path
-                      key={arc.segment}
-                      d={arc.path}
-                      fill={withAlpha(categoryPalette[arc.segment], 0.18)}
-                      stroke="#111"
-                      strokeWidth={1.5}
-                    />
+            <Box position="absolute" inset={0} pointerEvents="none" display="flex" justifyContent="center">
+              <Box position="relative" width={innerWidthPx} height="100%">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox={`0 0 ${svgWidthValue} ${canvasHeight}`}
+                  preserveAspectRatio="xMidYMid meet"
+                >
+                  <g transform={`translate(${centerX}, ${centerY})`}>
+                    {arcs.map(arc => (
+                      <path
+                        key={arc.segment}
+                        d={arc.path}
+                        fill={withAlpha(categoryPalette[arc.segment], 0.18)}
+                        stroke="#111"
+                        strokeWidth={1.5}
+                      />
+                    ))}
+                  </g>
+                  {labels.map(label => (
+                    <text
+                      key={label.segment}
+                      x={label.x}
+                      y={label.y}
+                      textAnchor="middle"
+                      fontSize={12}
+                      fontWeight={600}
+                      fill="#1a202c"
+                    >
+                      {label.segment}
+                    </text>
                   ))}
-                </g>
-                {labels.map(label => (
-                  <text
-                    key={label.segment}
-                    x={label.x}
-                    y={label.y}
-                    textAnchor="middle"
-                    fontSize={12}
-                    fontWeight={600}
-                    fill="#1a202c"
-                  >
-                    {label.segment}
-                  </text>
-                ))}
-              </svg>
+                </svg>
+              </Box>
             </Box>
-            <Box position="absolute" inset={0} pointerEvents="none">
-              {layout.map((bubble: BubbleWithPosition) => (
-                <CountryBubble key={bubble.key} bubble={bubble} />
-              ))}
+            <Box position="absolute" inset={0} pointerEvents="none" display="flex" justifyContent="center">
+              <Box position="relative" width={innerWidthPx} height="100%">
+                {layout.map((bubble: BubbleWithPosition) => (
+                  <CountryBubble key={bubble.key} bubble={bubble} onToggleCountry={onToggleCountry} />
+                ))}
+              </Box>
             </Box>
           </Box>
         </Box>
@@ -326,7 +336,7 @@ export default function EuropeanComparison({ allData, year }: EuropeanComparison
   );
 }
 
-function CountryBubble({ bubble }: { bubble: BubbleWithPosition }) {
+function CountryBubble({ bubble, onToggleCountry }: { bubble: BubbleWithPosition; onToggleCountry?: (country: CountryKey) => void }) {
   const { key, x, y, size, label, flag, flagUrl, percentage, color } = bubble;
   const flagStyle = FLAG_BACKGROUND_OVERRIDES[key] || {};
 
@@ -336,11 +346,11 @@ function CountryBubble({ bubble }: { bubble: BubbleWithPosition }) {
         position="absolute"
         left={0}
         top={0}
-        width={`${size}px`}
-        height={`${size}px`}
+    width={`${size}px`}
+    height={`${size}px`}
   borderRadius="full"
-  border="2px solid #0f0f0f"
-  boxShadow={`0 8px 24px rgba(0, 0, 0, 0.22), 0 0 0 4px ${color}, 0 0 0 7px rgba(255, 255, 255, 0.4)`}
+  border="1px solid #0f0f0f"
+  boxShadow={`0 6px 18px rgba(0, 0, 0, 0.18), 0 0 0 3px ${color}, 0 0 0 6px rgba(255, 255, 255, 0.35)`}
         bg={flagUrl ? 'transparent' : 'white'}
         overflow="hidden"
         display="flex"
@@ -356,6 +366,10 @@ function CountryBubble({ bubble }: { bubble: BubbleWithPosition }) {
           transform: `translate(${x - size / 2}px, ${y - size / 2}px)`,
           transition: 'transform 320ms cubic-bezier(0.4, 0, 0.2, 1), width 320ms ease, height 320ms ease'
         }}
+        cursor="pointer"
+        role="button"
+        aria-label={`Select ${label}`}
+        onClick={() => onToggleCountry?.(key)}
         pointerEvents="auto"
       >
         {!flagUrl && (
@@ -379,8 +393,8 @@ function CountryBubble({ bubble }: { bubble: BubbleWithPosition }) {
 
 function bubbleSize(percentage: number) {
   if (!Number.isFinite(percentage)) return BUBBLE_MIN;
-  const clamped = clamp(percentage, 5, 60);
-  const t = (clamped - 5) / (60 - 5);
+  const clamped = clamp(percentage, 4, 55);
+  const t = (clamped - 4) / (55 - 4);
   return Math.round(BUBBLE_MIN + t * (BUBBLE_MAX - BUBBLE_MIN));
 }
 

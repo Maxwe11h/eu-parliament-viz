@@ -6,12 +6,13 @@ import { useMemo } from 'react';
 
 type ViewToggleProps = {
   width?: string | number;
+  borderless?: boolean;
 };
 
 const TOGGLE_RADIUS = 18;
 const TOGGLE_PADDING = 4;
 
-export default function ViewToggle({ width = 320 }: ViewToggleProps) {
+export default function ViewToggle({ width = 320, borderless = false }: ViewToggleProps) {
   const pathname = usePathname() || '/';
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -62,9 +63,9 @@ export default function ViewToggle({ width = 320 }: ViewToggleProps) {
     <Box
       display="inline-flex"
       width={width}
-      border="2px solid black"
+      border={borderless ? 'none' : '2px solid black'}
       borderRadius={`${TOGGLE_RADIUS}px`}
-      boxShadow="sm"
+      boxShadow={borderless ? 'none' : 'sm'}
       bg="white"
       padding={`${TOGGLE_PADDING}px`}
       gap={`${TOGGLE_PADDING}px`}

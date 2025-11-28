@@ -33,13 +33,11 @@ import PartyTable from './PartyTable';
 import EuropeanComparison from './EuropeanComparison';
 
 const COLUMN_COUNT = 3;
-type ComparisonMode = 'countries' | 'europe';
 
 export default function ComparisonView() {
   const { allData, year, setYear } = useData();
   const initialSelections = useMemo(() => Array.from({ length: COLUMN_COUNT }, () => null as CountryKey | null), []);
   const [selectedCountries, setSelectedCountries] = useState<(CountryKey | null)[]>(initialSelections);
-  const [mode, setMode] = useState<ComparisonMode>('countries');
 
   const orderedKeys = useMemo(() => {
     const present = new Set(Object.keys(allData));
@@ -97,49 +95,67 @@ export default function ComparisonView() {
     });
   };
 
+  const handleToggleCountry = (country: CountryKey) => {
+    setSelectedCountries(prev => {
+      const existingIndex = prev.findIndex(value => value === country);
+      if (existingIndex !== -1) {
+        const next = [...prev];
+        next[existingIndex] = null;
+        return next;
+      }
+      const emptyIndex = prev.findIndex(value => value === null);
+      if (emptyIndex !== -1) {
+        const next = [...prev];
+        next[emptyIndex] = country;
+        return next;
+      }
+      const next = [...prev];
+      next[0] = country;
+      return next;
+    });
+  };
+
   return (
     <Box display="flex" flexDirection="column" height="100vh" bg="gray.50">
-      <Box px={6} py={5} borderBottom="2px solid" borderColor="black" bg="white" boxShadow="md">
-        <Flex align={{ base: 'flex-start', md: 'center' }} justify="space-between" gap={4} flexWrap="wrap">
+      <Box px={{ base: 4, md: 6 }} py={{ base: 1, md: 2 }} borderBottom="2px solid" borderColor="black" bg="white" boxShadow="md">
+        <Flex align={{ base: 'flex-start', md: 'center' }} justify="space-between" gap={3} flexWrap="wrap">
           <Box>
-            <Heading as="h1" size="md" textAlign="center">European Parliamentary Visualizer</Heading>
+            <Heading as="h1" size="md" lineHeight="1.2" textAlign="center">European Parliamentary Visualizer</Heading>
           </Box>
-          <Flex gap={3} flexWrap="wrap" justify="flex-end">
-            <ViewToggle width={280} />
-            <ComparisonModeToggle value={mode} onChange={next => setMode(next)} />
+          <Flex gap={2} flexWrap="wrap" justify="flex-end">
+            <ViewToggle width={240} borderless />
           </Flex>
         </Flex>
-        <Box mt={4}>
+        <Box mt={{ base: 3, md: 2 }}>
           <ComparisonTimeline year={year} onChange={setYear} years={timelineYears} />
         </Box>
       </Box>
 
       <Box flex="1" overflowY="auto">
-        {mode === 'countries' ? (
-          <Flex align="stretch" minH="100%" width="100%">
-            {columnConfigs.map((config, idx) => (
-              <Box
-                key={idx}
-                flex="1"
-                minW={0}
-                display="flex"
-                flexDirection="column"
-              >
-                <CountryColumn
-                  country={config.country}
-                  data={config.data}
-                  year={year}
-                  options={config.options}
-                  allData={allData}
-                  onSelect={country => handleSelectCountry(idx, country)}
-                  onClear={() => handleClearCountry(idx)}
-                />
-              </Box>
-            ))}
-          </Flex>
-        ) : (
-          <EuropeanComparison allData={allData} year={year} />
-        )}
+        <Box px={{ base: 0, md: 4 }} py={0} mb={-4}>
+          <EuropeanComparison allData={allData} year={year} onToggleCountry={handleToggleCountry} />
+        </Box>
+        <Flex align="stretch" minH="100%" width="100%" px={{ base: 0, md: 4 }} py={0}>
+          {columnConfigs.map((config, idx) => (
+            <Box
+              key={idx}
+              flex="1"
+              minW={0}
+              display="flex"
+              flexDirection="column"
+            >
+              <CountryColumn
+                country={config.country}
+                data={config.data}
+                year={year}
+                options={config.options}
+                allData={allData}
+                onSelect={country => handleSelectCountry(idx, country)}
+                onClear={() => handleClearCountry(idx)}
+              />
+            </Box>
+          ))}
+        </Flex>
       </Box>
     </Box>
   );
@@ -252,11 +268,11 @@ function CountryColumn({ country, data, year, options, allData, onSelect, onClea
             display="flex"
             flexDirection="column"
             alignItems="center"
-            justifyContent="center"
+            justifyContent="flex-start"
             bg="white"
             position="relative"
           >
-            <Box width="100%" display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+            <Box width="100%" display="flex" flexDirection="column" alignItems="center" justifyContent="flex-start">
               <Text fontWeight="semibold" mb={2}>No country selected</Text>
               <Text fontSize="sm" maxW="260px">
                 Use the search above to load a parliament into this column.
@@ -352,23 +368,23 @@ function ComparisonTimeline({ year, onChange, years }: { year: number; onChange:
   const sliderValue = Number.isFinite(clampedYear) ? clampedYear : minYear;
 
   return (
-    <Flex align="center" gap={4} flexWrap="wrap">
-      <Box border="2px solid black" borderRadius="14px" px={4} py={2} minW="120px">
-        <Text fontSize="2xl" fontWeight="bold" lineHeight="1">
+    <Flex align="center" gap={1} flexWrap="wrap">
+      <Box borderRadius="14px" px={3} minW="104px">
+        <Text fontSize="xl" fontWeight="bold" lineHeight="1">
           {sliderValue}
         </Text>
         <Text fontSize="xs" textTransform="uppercase" color="gray.500">
           Selected Year
         </Text>
       </Box>
-      <Flex flex="1" align="center" gap={3} minW="240px">
+      <Flex flex="1" align="center" gap={4} minW="220px">
         <Text fontWeight="semibold" color="gray.700">{minYear}</Text>
         <Slider value={sliderValue} min={minYear} max={maxYear} step={1} onChange={onChange} flex="1">
-          <SliderTrack bg="gray.200" height="6px" borderRadius="999px">
+          <SliderTrack bg="gray.200" height="4px" borderRadius="999px">
             <SliderFilledTrack bg="black" />
           </SliderTrack>
-          <SliderThumb boxSize={6} bg="white" border="2px solid black" _focus={{ boxShadow: 'none' }} _active={{ boxShadow: 'none' }}>
-            <Box as="span" width="0" height="0" borderLeft="6px solid transparent" borderRight="6px solid transparent" borderTop="10px solid black" transform="translateY(2px)" />
+          <SliderThumb boxSize={5} bg="white" border="2px solid black" _focus={{ boxShadow: 'none' }} _active={{ boxShadow: 'none' }}>
+            <Box as="span" width="0" height="0" borderLeft="5px solid transparent" borderRight="5px solid transparent" borderTop="9px solid black" transform="translateY(1px)" />
           </SliderThumb>
         </Slider>
         <Text fontWeight="semibold" color="gray.700">{maxYear}</Text>
@@ -381,52 +397,4 @@ function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-const MODE_OPTIONS: Array<{ value: ComparisonMode; label: string }> = [
-  { value: 'countries', label: 'Country' },
-  { value: 'europe', label: 'Europe' }
-];
-
-function ComparisonModeToggle({ value, onChange }: { value: ComparisonMode; onChange: (next: ComparisonMode) => void }) {
-  return (
-    <Box
-      display="inline-flex"
-  width={{ base: '100%', md: '280px' }}
-      border="2px solid black"
-      borderRadius="20px"
-      bg="white"
-      padding="4px"
-      gap="4px"
-      boxShadow="sm"
-    >
-      {MODE_OPTIONS.map(option => {
-        const isActive = value === option.value;
-        return (
-          <Button
-            key={option.value}
-            onClick={() => onChange(option.value)}
-            flex={1}
-            variant="unstyled"
-            borderRadius="16px"
-            border="1px solid"
-            borderColor={isActive ? 'black' : 'gray.200'}
-            bg={isActive ? 'black' : 'transparent'}
-            color={isActive ? 'white' : 'gray.800'}
-            py={2}
-            px={4}
-            height="40px"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            transition="background 150ms ease, color 150ms ease, border-color 150ms ease"
-            _hover={{ bg: isActive ? 'black' : 'gray.50' }}
-            aria-pressed={isActive}
-          >
-            <Text fontWeight="semibold" fontSize="sm">
-              {option.label}
-            </Text>
-          </Button>
-        );
-      })}
-    </Box>
-  );
-}
+// Removed ComparisonModeToggle; view now always shows both European overview and country columns.
