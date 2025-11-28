@@ -16,7 +16,17 @@ export type CountryKey =
   | 'estonia'
   | 'finland'
   | 'greece'
-  | 'hungary';
+  | 'hungary'
+  | 'latvia'
+  | 'lithuania'
+  | 'luxembourg'
+  | 'malta'
+  | 'netherlands'
+  | 'poland'
+  | 'romania'
+  | 'slovakia'
+  | 'slovenia'
+  | 'sweden';
 
 export type ParliamentRow = {
   Year: number;

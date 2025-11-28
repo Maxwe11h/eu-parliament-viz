@@ -16,7 +16,9 @@ import { categoryPalette } from '@/lib/colors';
 const keyByISO: Partial<Record<string, CountryKey>> = {
   FR: 'france', DE: 'germany', IE: 'ireland', IT: 'italy', PT: 'portugal', ES: 'spain',
   AT: 'austria', BE: 'belgium', BG: 'bulgaria', HR: 'croatia', CY: 'cyprus', CZ: 'czech-republic',
-  DK: 'denmark', EE: 'estonia', FI: 'finland', GR: 'greece', HU: 'hungary'
+  DK: 'denmark', EE: 'estonia', FI: 'finland', GR: 'greece', HU: 'hungary',
+  LV: 'latvia', LT: 'lithuania', LU: 'luxembourg', MT: 'malta', NL: 'netherlands',
+  PL: 'poland', RO: 'romania', SK: 'slovakia', SI: 'slovenia', SE: 'sweden'
 };
 
 // Build a mapping from numeric (cca3 numeric) to alpha-2 using world-countries
@@ -35,7 +37,7 @@ for (const c of worldCountries) {
 // Explicitly exclude Russia (RU) from rendering despite being partly in Europe region
 europeanAlpha2.delete('RU');
 // Explicit ensure our six exist even if mapping fails.
-['FR','DE','IE','IT','PT','ES','AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR','HU'].forEach(code=>{ /* ensure presence */ });
+['FR','DE','IE','IT','PT','ES','AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR','HU','LV','LT','LU','MT','NL','PL','RO','SK','SI','SE'].forEach(code=>{ /* ensure presence */ });
 
 const WIDTH = 1200; const HEIGHT = 700; // logical viewport
 
@@ -274,10 +276,16 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
             </HStack>
             {legendOpen && (
               <VStack align="start" spacing={1}>
-                {(['Far Left','Left','Centre-Left','Centre','Centre-Right','Right','Far Right'] as const).map(cat=> (
-                  <HStack key={cat} spacing={2}>
-                    <Box width="12px" height="12px" borderRadius="2px" bg={categoryPalette[cat]} border="1px solid black" />
-                    <Text fontSize="sm">{cat}</Text>
+                {[
+                  ...(['Far Left','Left','Centre-Left','Centre','Centre-Right','Right','Far Right'] as const).map(cat => ({
+                    label: cat,
+                    color: categoryPalette[cat]
+                  })),
+                  { label: 'Non-EU nations', color: '#CCCCCC' }
+                ].map(item => (
+                  <HStack key={item.label} spacing={2}>
+                    <Box width="12px" height="12px" borderRadius="2px" bg={item.color} border="1px solid black" />
+                    <Text fontSize="sm">{item.label}</Text>
                   </HStack>
                 ))}
               </VStack>

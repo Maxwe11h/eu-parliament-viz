@@ -17,7 +17,17 @@ export const countryLabels: Record<CountryKey, string> = {
   estonia: 'Estonia',
   finland: 'Finland',
   greece: 'Greece',
-  hungary: 'Hungary'
+  hungary: 'Hungary',
+  latvia: 'Latvia',
+  lithuania: 'Lithuania',
+  luxembourg: 'Luxembourg',
+  malta: 'Malta',
+  netherlands: 'Netherlands',
+  poland: 'Poland',
+  romania: 'Romania',
+  slovakia: 'Slovakia',
+  slovenia: 'Slovenia',
+  sweden: 'Sweden'
 };
 
 export const countryIsoCodes: Record<CountryKey, string> = {
@@ -37,7 +47,17 @@ export const countryIsoCodes: Record<CountryKey, string> = {
   estonia: 'EE',
   finland: 'FI',
   greece: 'GR',
-  hungary: 'HU'
+  hungary: 'HU',
+  latvia: 'LV',
+  lithuania: 'LT',
+  luxembourg: 'LU',
+  malta: 'MT',
+  netherlands: 'NL',
+  poland: 'PL',
+  romania: 'RO',
+  slovakia: 'SK',
+  slovenia: 'SI',
+  sweden: 'SE'
 };
 
 export const orderedCountryKeys: CountryKey[] = [
@@ -57,7 +77,17 @@ export const orderedCountryKeys: CountryKey[] = [
   'estonia',
   'finland',
   'greece',
-  'hungary'
+  'hungary',
+  'latvia',
+  'lithuania',
+  'luxembourg',
+  'malta',
+  'netherlands',
+  'poland',
+  'romania',
+  'slovakia',
+  'slovenia',
+  'sweden'
 ];
 
 export function getCountryLabel(key: CountryKey) {

@@ -9,7 +9,8 @@ import path from 'path';
 
 const countries: CountryKey[] = [
   'france', 'germany', 'ireland', 'italy', 'portugal', 'spain',
-  'austria','belgium','bulgaria','croatia','cyprus','czech-republic','denmark','estonia','finland','greece','hungary'
+  'austria','belgium','bulgaria','croatia','cyprus','czech-republic','denmark','estonia','finland','greece','hungary',
+  'latvia','lithuania','luxembourg','malta','netherlands','poland','romania','slovakia','slovenia','sweden'
 ];
 export { countries };
 
