@@ -35,9 +35,14 @@ import EuropeanComparison from './EuropeanComparison';
 const COLUMN_COUNT = 3;
 
 export default function ComparisonView() {
-  const { allData, year, setYear } = useData();
-  const initialSelections = useMemo(() => Array.from({ length: COLUMN_COUNT }, () => null as CountryKey | null), []);
-  const [selectedCountries, setSelectedCountries] = useState<(CountryKey | null)[]>(initialSelections);
+  const { allData, year, setYear, comparisonSelections, setComparisonSelections } = useData();
+
+  const normalizeSelections = (values: (CountryKey | null)[]) => {
+    if (values.length === COLUMN_COUNT) return values;
+    return Array.from({ length: COLUMN_COUNT }, (_, idx) => values[idx] ?? null);
+  };
+
+  const selectedCountries = useMemo(() => normalizeSelections(comparisonSelections), [comparisonSelections]);
 
   const orderedKeys = useMemo(() => {
     const present = new Set(Object.keys(allData));
@@ -80,36 +85,39 @@ export default function ComparisonView() {
   });
 
   const handleSelectCountry = (index: number, country: CountryKey) => {
-    setSelectedCountries(prev => {
-      const next = [...prev];
+    setComparisonSelections(prev => {
+      const base = normalizeSelections(prev);
+      const next = [...base];
       next[index] = country;
       return next;
     });
   };
 
   const handleClearCountry = (index: number) => {
-    setSelectedCountries(prev => {
-      const next = [...prev];
+    setComparisonSelections(prev => {
+      const base = normalizeSelections(prev);
+      const next = [...base];
       next[index] = null;
       return next;
     });
   };
 
   const handleToggleCountry = (country: CountryKey) => {
-    setSelectedCountries(prev => {
-      const existingIndex = prev.findIndex(value => value === country);
+    setComparisonSelections(prev => {
+      const base = normalizeSelections(prev);
+      const existingIndex = base.findIndex(value => value === country);
       if (existingIndex !== -1) {
-        const next = [...prev];
+        const next = [...base];
         next[existingIndex] = null;
         return next;
       }
-      const emptyIndex = prev.findIndex(value => value === null);
+      const emptyIndex = base.findIndex(value => value === null);
       if (emptyIndex !== -1) {
-        const next = [...prev];
+        const next = [...base];
         next[emptyIndex] = country;
         return next;
       }
-      const next = [...prev];
+      const next = [...base];
       next[0] = country;
       return next;
     });

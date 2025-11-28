@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Dispatch, SetStateAction, createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CountryKey, YearData } from '@/types';
 
@@ -10,13 +10,19 @@ type DataContextValue = {
   year: number;
   setYear: (y:number)=>void;
   currentYearData?: YearData;
+  comparisonSelections: (CountryKey | null)[];
+  setComparisonSelections: Dispatch<SetStateAction<(CountryKey | null)[]>>;
 };
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
 
+const DEFAULT_COMPARISON_COLUMNS = 3;
+const createEmptyComparisonSelections = () => Array.from({ length: DEFAULT_COMPARISON_COLUMNS }, () => null as CountryKey | null);
+
 export function DataProvider({ children, allData }: { children: React.ReactNode; allData: Record<CountryKey, YearData[]> }) {
   const [country,setCountry] = useState<CountryKey | undefined>();
   const [yearState,setYearState] = useState<number>(2018);
+  const [comparisonSelections, setComparisonSelections] = useState<(CountryKey | null)[]>(() => createEmptyComparisonSelections());
   const router = useRouter();
   const params = useSearchParams();
   const pathname = usePathname();
@@ -49,7 +55,22 @@ export function DataProvider({ children, allData }: { children: React.ReactNode;
     const prev = [...arr].reverse().find(d=>d.year <= yearState);
     return prev ?? arr[0];
   },[allData,country,yearState]);
-  return <DataContext.Provider value={{ allData, country, setCountry: (c?: CountryKey)=>setCountry(c), year: yearState, setYear, currentYearData }}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider
+      value={{
+        allData,
+        country,
+        setCountry: (c?: CountryKey) => setCountry(c),
+        year: yearState,
+        setYear,
+        currentYearData,
+        comparisonSelections,
+        setComparisonSelections
+      }}
+    >
+      {children}
+    </DataContext.Provider>
+  );
 }
 
 export function useData(){

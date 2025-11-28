@@ -35,11 +35,10 @@ type BubbleDatum = {
 };
 
 type BubbleWithPosition = BubbleDatum & { x: number; y: number; size: number };
-type PlacementSnapshot = { segment: SegmentKey; angle: number; radiusFactor: number };
 type SegmentArc = { segment: SegmentKey; startAngle: number; endAngle: number; path: string };
 type SegmentLabel = { segment: SegmentKey; x: number; y: number };
 type GeometrySnapshot = {
-  positions: BubbleWithPosition[];
+  targets: BubbleWithPosition[];
   arcs: SegmentArc[];
   labels: SegmentLabel[];
   height: number;
@@ -47,7 +46,7 @@ type GeometrySnapshot = {
   centerY: number;
   outerRadius: number;
   innerRadius: number;
-  placement: Map<CountryKey, PlacementSnapshot>;
+  signature: string;
 };
 
 const BUBBLE_MIN = 20;
@@ -56,6 +55,11 @@ const MIN_CANVAS_HEIGHT = 420;
 const BORDER_MARGIN = 8;
 const COLLISION_PADDING = 1.5;
 const VISUAL_MAX_WIDTH = 900;
+const SEGMENT_FILL_ALPHA = 0.45;
+const SEGMENT_STROKE_ALPHA = 0.65;
+const SEGMENT_STROKE_WIDTH = 2.2;
+const LABEL_EDGE_PADDING = 32;
+const ANIMATION_DURATION = 80;
 
 const FLAG_BACKGROUND_OVERRIDES: Partial<Record<CountryKey, { backgroundSize?: string; backgroundPosition?: string }>> = {
   ireland: {
@@ -66,8 +70,11 @@ const FLAG_BACKGROUND_OVERRIDES: Partial<Record<CountryKey, { backgroundSize?: s
 
 export default function EuropeanComparison({ allData, year, onToggleCountry }: EuropeanComparisonProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
-  const previousPlacementRef = useRef<Map<CountryKey, PlacementSnapshot>>(new Map());
+  const animationFrameRef = useRef<number | null>(null);
+  const latestLayoutRef = useRef<BubbleWithPosition[]>([]);
+  const handledSignatureRef = useRef<string>('');
   const [width, setWidth] = useState(0);
+  const [layout, setLayout] = useState<BubbleWithPosition[]>([]);
   const drawingWidth = width > 0 ? Math.min(width, VISUAL_MAX_WIDTH) : 0;
 
   useEffect(() => {
@@ -107,7 +114,7 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
   const geometry = useMemo<GeometrySnapshot>(() => {
     if (!drawingWidth) {
       return {
-        positions: [] as BubbleWithPosition[],
+        targets: [] as BubbleWithPosition[],
         arcs: [],
         labels: [],
         height: MIN_CANVAS_HEIGHT,
@@ -115,22 +122,21 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
         centerY: MIN_CANVAS_HEIGHT - 60,
         outerRadius: 0,
         innerRadius: 0,
-        placement: new Map<CountryKey, PlacementSnapshot>()
+        signature: ''
       };
     }
 
-    const previousPlacement = previousPlacementRef.current;
-  const wedgeAngle = Math.PI / LEANING_SEGMENTS.length;
+    const wedgeAngle = Math.PI / LEANING_SEGMENTS.length;
     const orientationOffset = Math.PI / 2; // rotate semicircle vertically
     const margin = 48;
-  const maxRadiusFromWidth = Math.max(drawingWidth / 2 - margin, 180);
+    const maxRadiusFromWidth = Math.max(drawingWidth / 2 - margin, 180);
     const outerRadius = Math.min(maxRadiusFromWidth, 540);
     const innerRadius = outerRadius * 0.22; // smaller inner circle
     const topMargin = 30;
     const bottomMargin = 5;
     const cy = outerRadius + topMargin;
     const canvasHeight = Math.max(MIN_CANVAS_HEIGHT, cy + bottomMargin);
-  const cx = drawingWidth / 2;
+    const cx = drawingWidth / 2;
 
     const arcGen = d3
       .arc<{ startAngle: number; endAngle: number }>()
@@ -152,10 +158,12 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
     const labelRadius = outerRadius + 52;
     const labels = arcs.map(arc => {
       const mid = (arc.startAngle + arc.endAngle) / 2 - orientationOffset;
+      const rawX = cx + labelRadius * Math.cos(mid);
       const yOffset = arc.segment === 'Centre' ? +32 : 0;
+      const maxLabelX = Math.max(LABEL_EDGE_PADDING, drawingWidth - LABEL_EDGE_PADDING);
       return {
         segment: arc.segment,
-        x: cx + labelRadius * Math.cos(mid),
+        x: clamp(rawX, LABEL_EDGE_PADDING, maxLabelX),
         y: cy + labelRadius * Math.sin(mid) + yOffset
       };
     });
@@ -175,12 +183,7 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
       const entries = grouped.get(section.segment) || [];
       if (!entries.length) return;
 
-      const sortedEntries: BubbleDatum[] = sortEntriesWithMemory(
-        entries,
-        section.segment,
-        previousPlacement,
-        displayOrder
-      );
+      const sortedEntries: BubbleDatum[] = sortEntries(entries, displayOrder);
       const rings = Math.max(1, Math.ceil(sortedEntries.length / basePerRing));
       const ringGap = (outerRadius - innerRadius) / Math.max(1, rings);
       const segmentConstraint = {
@@ -188,7 +191,7 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
         maxAngle: section.endAngle - anglePadding * 0.6
       };
 
-  sortedEntries.forEach((bubble: BubbleDatum, idx: number) => {
+      sortedEntries.forEach((bubble, idx) => {
         const size = bubbleSize(bubble.percentage);
         const ring = Math.floor(idx / basePerRing);
         const ringStartIndex = ring * basePerRing;
@@ -197,32 +200,17 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
         const effectiveAngle = Math.max(wedgeAngle - anglePadding * 2, 0.01);
         const angleStep = effectiveAngle / Math.max(slotsInRing, 1);
         const baseAngle = section.startAngle + anglePadding + angleStep * (slot + 0.5);
-        const angleJitter = (randomBetween(hashString(`${bubble.key}-angle`), slot, -0.5, 0.5)) * angleStep * 0.35;
+        const angleJitter = (randomBetween(hashString(`${bubble.key}-angle`), slot, -0.4, 0.4)) * angleStep * 0.25;
         const slotAngle = clamp(baseAngle + angleJitter, segmentConstraint.minAngle, segmentConstraint.maxAngle);
-
-        const memory = previousPlacement.get(bubble.key);
-        const hasMemory = memory && memory.segment === section.segment;
-        const blendedAngle = hasMemory ? blendAngles(memory!.angle, slotAngle, 0.25) : slotAngle;
-        const constrainedAngle = clamp(blendedAngle, segmentConstraint.minAngle, segmentConstraint.maxAngle);
-        const angle = constrainedAngle - orientationOffset;
+        const angle = slotAngle - orientationOffset;
 
         const baseRadius = outerRadius - ringGap * ring - ringGap / 2;
-        const radiusJitter = (randomBetween(hashString(`${bubble.key}-radius`), ring, -0.5, 0.5)) * ringGap * 0.45;
-        const slotRadius = clamp(
+        const radiusJitter = (randomBetween(hashString(`${bubble.key}-radius`), ring, -0.45, 0.45)) * ringGap * 0.4;
+        const radius = clamp(
           baseRadius + radiusJitter,
           innerRadius + size / 2 + BORDER_MARGIN,
           outerRadius - size / 2 - BORDER_MARGIN
         );
-
-        const radiusRange = Math.max(1, outerRadius - innerRadius);
-        const memoryRadius = hasMemory
-          ? clamp(
-              innerRadius + clamp(memory!.radiusFactor, 0, 1) * radiusRange,
-              innerRadius + size / 2 + BORDER_MARGIN,
-              outerRadius - size / 2 - BORDER_MARGIN
-            )
-          : slotRadius;
-        const radius = hasMemory ? blendValues(memoryRadius, slotRadius, 0.35) : slotRadius;
 
         const x = cx + radius * Math.cos(angle);
         const y = cy + radius * Math.sin(angle);
@@ -236,7 +224,7 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
       });
     });
 
-    const resolvedPositions = resolveCollisions(positions, {
+    const resolvedTargets = resolveCollisions(positions, {
       arcs,
       centerX: cx,
       centerY: cy,
@@ -247,17 +235,12 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
       borderMargin: BORDER_MARGIN
     });
 
-    const placementSnapshot = buildPlacementSnapshot(
-      resolvedPositions,
-      cx,
-      cy,
-      orientationOffset,
-      innerRadius,
-      outerRadius
-    );
+    const signature = resolvedTargets
+      .map(node => `${node.key}:${node.x.toFixed(2)}:${node.y.toFixed(2)}:${node.size}`)
+      .join('|');
 
     return {
-      positions: resolvedPositions,
+      targets: resolvedTargets,
       arcs,
       labels,
       height: canvasHeight,
@@ -265,18 +248,85 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
       centerY: cy,
       outerRadius,
       innerRadius,
-      placement: placementSnapshot
+      signature
     };
   }, [bubbles, drawingWidth, displayOrder]);
 
-  const { positions: layout, arcs, labels, height: canvasHeight, centerX, centerY, placement } = geometry;
+  const { targets, arcs, labels, height: canvasHeight, centerX, centerY, signature } = geometry;
   const hasMeasurement = width > 0;
   const innerWidthPx = hasMeasurement ? `${drawingWidth}px` : '100%';
   const svgWidthValue = hasMeasurement ? drawingWidth : Math.max(width, 1) || 1;
 
   useEffect(() => {
-    previousPlacementRef.current = placement;
-  }, [placement]);
+    latestLayoutRef.current = layout;
+  }, [layout]);
+
+  useEffect(() => {
+    if (signature === handledSignatureRef.current) {
+      return;
+    }
+    handledSignatureRef.current = signature;
+
+    const targetPositions = targets;
+
+    if (!targetPositions.length) {
+      setLayout([]);
+      latestLayoutRef.current = [];
+      return;
+    }
+
+    const previousMap = new Map(latestLayoutRef.current.map(position => [position.key, position]));
+    if (!previousMap.size) {
+      setLayout(targetPositions);
+      latestLayoutRef.current = targetPositions;
+      return;
+    }
+
+  const duration = ANIMATION_DURATION;
+    const animationEntries = targetPositions.map(target => {
+      const previous = previousMap.get(target.key);
+      return {
+        target,
+        startX: previous?.x ?? centerX,
+        startY: previous?.y ?? centerY,
+        startSize: previous?.size ?? target.size
+      };
+    });
+
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    const startTime = performance.now();
+
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / duration);
+      const eased = easeInOutCubic(progress);
+      const framePositions = animationEntries.map(entry => ({
+        ...entry.target,
+        x: lerp(entry.startX, entry.target.x, eased),
+        y: lerp(entry.startY, entry.target.y, eased),
+        size: lerp(entry.startSize, entry.target.size, eased)
+      }));
+      setLayout(framePositions);
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(step);
+      } else {
+        animationFrameRef.current = null;
+        latestLayoutRef.current = framePositions;
+      }
+    };
+
+    step(startTime);
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [targets, signature, centerX, centerY]);
 
   return (
     <Box px={{ base: 2, md: 4 }} py={{ base: 4, md: 6 }} width="100%">
@@ -300,9 +350,9 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
                       <path
                         key={arc.segment}
                         d={arc.path}
-                        fill={withAlpha(categoryPalette[arc.segment], 0.18)}
-                        stroke="#111"
-                        strokeWidth={1.5}
+                        fill={withAlpha(categoryPalette[arc.segment], SEGMENT_FILL_ALPHA)}
+                        stroke={withAlpha(categoryPalette[arc.segment], SEGMENT_STROKE_ALPHA)}
+                        strokeWidth={SEGMENT_STROKE_WIDTH}
                       />
                     ))}
                   </g>
@@ -442,27 +492,14 @@ function mulberry32(seed: number) {
   };
 }
 
-function sortEntriesWithMemory(
-  entries: BubbleDatum[],
-  segment: SegmentKey,
-  placement: Map<CountryKey, PlacementSnapshot>,
-  displayOrder: CountryKey[]
-) {
+function sortEntries(entries: BubbleDatum[], displayOrder: CountryKey[]) {
   if (entries.length <= 1) return entries.slice();
   const orderIndex = new Map<CountryKey, number>();
   displayOrder.forEach((key, idx) => orderIndex.set(key, idx));
   return [...entries].sort((a, b) => {
-    const aPrev = placement.get(a.key);
-    const bPrev = placement.get(b.key);
-    const aValid = aPrev && aPrev.segment === segment;
-    const bValid = bPrev && bPrev.segment === segment;
-    if (aValid && bValid && aPrev!.angle !== bPrev!.angle) {
-      return aPrev!.angle - bPrev!.angle;
-    }
-    if (aValid && !bValid) return -1;
-    if (!aValid && bValid) return 1;
-    const baseDiff = (orderIndex.get(a.key) ?? 0) - (orderIndex.get(b.key) ?? 0);
-    if (baseDiff !== 0) return baseDiff;
+    const diff = (orderIndex.get(a.key) ?? Number.POSITIVE_INFINITY) -
+      (orderIndex.get(b.key) ?? Number.POSITIVE_INFINITY);
+    if (diff !== 0) return diff;
     return a.key.localeCompare(b.key);
   });
 }
@@ -558,43 +595,12 @@ function pairUnitVector(aKey: CountryKey, bKey: CountryKey) {
   };
 }
 
-function buildPlacementSnapshot(
-  positions: BubbleWithPosition[],
-  centerX: number,
-  centerY: number,
-  orientationOffset: number,
-  innerRadius: number,
-  outerRadius: number
-) {
-  const snapshot = new Map<CountryKey, PlacementSnapshot>();
-  const radiusRange = Math.max(1, outerRadius - innerRadius);
-  positions.forEach(position => {
-    const dx = position.x - centerX;
-    const dy = position.y - centerY;
-    const angle = Math.atan2(dy, dx) + orientationOffset;
-    const radius = Math.hypot(dx, dy);
-    const radiusFactor = clamp((radius - innerRadius) / radiusRange, 0, 1);
-    snapshot.set(position.key, {
-      segment: position.category,
-      angle,
-      radiusFactor
-    });
-  });
-  return snapshot;
+function lerp(from: number, to: number, t: number) {
+  return from + (to - from) * t;
 }
 
-function blendAngles(from: number, to: number, factor: number) {
-  const t = clamp(factor, 0, 1);
-  if (t <= 0) return from;
-  if (t >= 1) return to;
-  const x = Math.cos(from) * (1 - t) + Math.cos(to) * t;
-  const y = Math.sin(from) * (1 - t) + Math.sin(to) * t;
-  return Math.atan2(y, x);
-}
-
-function blendValues(from: number, to: number, factor: number) {
-  const t = clamp(factor, 0, 1);
-  return from * (1 - t) + to * t;
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 
