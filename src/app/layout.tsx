@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import ThemeProviderClient from '@/components/ThemeProviderClient';
 import './globals.css';
@@ -17,7 +17,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <ThemeProviderClient>
-          <DataProvider allData={allData}>{children}</DataProvider>
+          <Suspense fallback={null}>
+            <DataProvider allData={allData}>{children}</DataProvider>
+          </Suspense>
         </ThemeProviderClient>
       </body>
     </html>
