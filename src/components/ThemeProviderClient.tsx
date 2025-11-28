@@ -1,11 +1,18 @@
 "use client";
-import { ChakraProvider, extendTheme } from '@chakra-ui/react';
+import { CacheProvider } from '@chakra-ui/next-js';
+import { ChakraProvider, extendTheme, ThemeConfig } from '@chakra-ui/react';
 import { ReactNode } from 'react';
 import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'] });
 
+const config: ThemeConfig = {
+  initialColorMode: 'light',
+  useSystemColorMode: false
+};
+
 const theme = extendTheme({
+  config,
   fonts: {
     heading: `${inter.style.fontFamily}, system-ui, sans-serif`,
     body: `${inter.style.fontFamily}, system-ui, sans-serif`,
@@ -19,5 +26,11 @@ const theme = extendTheme({
 });
 
 export default function ThemeProviderClient({ children }: { children: ReactNode }) {
-  return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
+  return (
+    <CacheProvider>
+      <ChakraProvider theme={theme}>
+        {children}
+      </ChakraProvider>
+    </CacheProvider>
+  );
 }
