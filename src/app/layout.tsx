@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import ThemeProviderClient from '@/components/ThemeProviderClient';
 import './globals.css';
@@ -16,9 +16,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ColorModeScript initialColorMode="light" />
       </head>
       <body>
-        <ThemeProviderClient>
-          <DataProvider allData={allData}>{children}</DataProvider>
-        </ThemeProviderClient>
+        <Suspense fallback={null}>
+          <ThemeProviderClient>
+            <DataProvider allData={allData}>{children}</DataProvider>
+          </ThemeProviderClient>
+        </Suspense>
       </body>
     </html>
   );
