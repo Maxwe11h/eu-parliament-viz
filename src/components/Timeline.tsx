@@ -1,24 +1,58 @@
 "use client";
-import { HStack, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Text, Box, Heading } from '@chakra-ui/react';
+import { HStack, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Box, Heading } from '@chakra-ui/react';
 import { useMemo, useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useData } from './DataContext';
 import { majoritySocialCategory } from '@/lib/analytics';
 import { categoryPalette } from '@/lib/colors';
 
-export default function Timeline({ year, onChange }: { year: number; onChange: (y:number)=>void }) {
+export const TIMELINE_MIN_YEAR = 1950;
+export const TIMELINE_MAX_YEAR = 2025;
+const TIMELINE_SPAN = TIMELINE_MAX_YEAR - TIMELINE_MIN_YEAR;
+const ALL_TIMELINE_YEARS = Array.from({ length: TIMELINE_MAX_YEAR - TIMELINE_MIN_YEAR + 1 }, (_, idx) => TIMELINE_MIN_YEAR + idx);
+const getYearRatio = (value: number) => {
+  if (TIMELINE_SPAN === 0) return 0;
+  return (value - TIMELINE_MIN_YEAR) / TIMELINE_SPAN;
+};
+
+type TickHeightConfig = {
+  decade: number;
+  year: number;
+};
+
+type TimelineProps = {
+  year: number;
+  onChange: (y: number) => void;
+  minTickYear?: number;
+  showElectionPins?: boolean;
+  borderless?: boolean;
+  tickHeights?: TickHeightConfig;
+};
+
+const DEFAULT_TICK_HEIGHTS: TickHeightConfig = { decade: 9, year: 6 };
+
+export default function Timeline({ year, onChange, minTickYear, showElectionPins = true, borderless = false, tickHeights = DEFAULT_TICK_HEIGHTS }: TimelineProps) {
   const { allData, country } = useData();
   const electionYears = useMemo(()=>{
     if (!country) return [] as number[];
     const years = (allData[country] || []).map(d=>d.year);
     // Remove duplicates (e.g., Ireland 1982 has two elections)
-    return [...new Set(years)].filter((y)=> y >= 1950 && y <= 2025);
+    return [...new Set(years)].filter((y)=> y >= TIMELINE_MIN_YEAR && y <= TIMELINE_MAX_YEAR);
   },[allData, country]);
+  const activeElectionYears = showElectionPins ? electionYears : [];
+  const clampedMinTickYear = useMemo(()=>{
+    if (typeof minTickYear !== 'number') return TIMELINE_MIN_YEAR;
+    if (Number.isNaN(minTickYear)) return TIMELINE_MIN_YEAR;
+    return Math.min(TIMELINE_MAX_YEAR, Math.max(TIMELINE_MIN_YEAR, Math.round(minTickYear)));
+  },[minTickYear]);
+  const visibleElectionYears = useMemo(()=>{
+    return activeElectionYears.filter((y)=> y >= clampedMinTickYear);
+  },[activeElectionYears, clampedMinTickYear]);
   
   const tickData = useMemo(()=>{
     if (!country) return new Map<number, { color: string; partyName?: string; percentage?: number; collection?: 'Left'|'Centre'|'Right' }>();
     const m = new Map<number, { color: string; partyName?: string; percentage?: number; collection?: 'Left'|'Centre'|'Right' }>();
-    for (const y of electionYears) {
+    for (const y of activeElectionYears) {
       const maj = majoritySocialCategory(allData, country, y);
       const color = maj.category ? categoryPalette[maj.category] || '#666' : '#666';
       m.set(y, { 
@@ -29,9 +63,17 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
       });
     }
     return m;
-  },[allData, country, electionYears]);
+  },[allData, country, activeElectionYears]);
 
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
+  useEffect(()=>{
+    if (hoveredYear !== null && hoveredYear < clampedMinTickYear) {
+      setHoveredYear(null);
+    }
+  },[hoveredYear, clampedMinTickYear]);
+  useEffect(()=>{
+    if (!showElectionPins) setHoveredYear(null);
+  },[showElectionPins]);
   const trackRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const sliderTrackRef = useRef<HTMLDivElement>(null);
@@ -47,7 +89,7 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
     if (!portalReady || hoveredYear === null) return;
     const trackRect = sliderTrackRef.current?.getBoundingClientRect();
     if (!trackRect) return;
-    const t = (hoveredYear - 1950) / (2025 - 1950);
+    const t = getYearRatio(hoveredYear);
     const pinViewportX = trackRect.left + t * trackRect.width;
   const outerRect = outerRef.current?.getBoundingClientRect();
     const width = tooltipRef.current?.getBoundingClientRect().width;
@@ -73,7 +115,7 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
       requestAnimationFrame(()=>{
         const trackRect = sliderTrackRef.current?.getBoundingClientRect();
         if (!trackRect || !tooltipRef.current) return;
-        const t = (hoveredYear - 1950) / (2025 - 1950);
+        const t = getYearRatio(hoveredYear);
         const pinViewportX = trackRect.left + t * trackRect.width;
         const outerRect = outerRef.current?.getBoundingClientRect();
         const width = tooltipRef.current.getBoundingClientRect().width;
@@ -116,13 +158,30 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
   },[]);
 
   const outerRef = useRef<HTMLDivElement>(null);
+  const svgWidth = Math.max(metrics.width, 1);
+  const decadeTickHalf = tickHeights.decade;
+  const yearTickHalf = tickHeights.year;
   return (
-  <HStack ref={outerRef} pt={2} pb={0} px={0} border="2px solid" borderColor="gray.900" bg="white" align="center" spacing={3} borderRadius="12px" boxShadow="lg" overflow="visible" style={{ height: '54px' }}>
-  <Heading as="h6" size="xs" pl={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-4px)' }}>1950</Heading>
+  <HStack
+    ref={outerRef}
+    pt={2}
+    pb={0}
+    px={0}
+    align="center"
+    spacing={3}
+    borderRadius={borderless ? 0 : '12px'}
+    boxShadow={borderless ? 'none' : 'lg'}
+    border={borderless ? 'none' : '2px solid'}
+    borderColor={borderless ? 'transparent' : 'gray.900'}
+    bg={borderless ? 'transparent' : 'white'}
+    overflow="visible"
+    style={{ height: '54px', width: '100%' }}
+  >
+    <Heading as="h6" size="xs" pl={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-4px)' }}>{TIMELINE_MIN_YEAR}</Heading>
   <Box position="relative" flex={1} height="38px" ref={trackRef}>
   {/* Clickable pin heads overlay - positioned above SVG and track */}
-        {electionYears.map((y)=>{
-          const t = (y-1950)/(2025-1950);
+      {showElectionPins && visibleElectionYears.map((y)=>{
+          const t = getYearRatio(y);
           const leftPx = metrics.offsetLeft + t * metrics.width;
           const dotTop = metrics.offsetTop + (metrics.height/2) - 18 + 5; // adjusted for shorter height
           const data = tickData.get(y);
@@ -152,11 +211,11 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
           );
         })}
         {/* Hover tooltip: portal to body so it layers above CountryPanel; clamp only on LEFT to avoid off-page */}
-        {portalReady && hoveredYear !== null && (() => {
+        {showElectionPins && portalReady && hoveredYear !== null && (() => {
           const data = tickData.get(hoveredYear);
           const trackRect = sliderTrackRef.current?.getBoundingClientRect();
           if (!trackRect) return null;
-          const t = (hoveredYear - 1950) / (2025 - 1950);
+          const t = getYearRatio(hoveredYear);
           const pinViewportX = trackRect.left + t * trackRect.width;
           const pinViewportY = trackRect.top + (trackRect.height / 2) - 22 + 5; // replicate local pin top logic in viewport coords
           const verticalOffset = 12;
@@ -212,26 +271,54 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
           );
           return createPortal(tooltipNode, document.body);
         })()}
-        {/* ticks - visual only */}
-        <Box position="absolute" left={`${metrics.offsetLeft}px`} width={`${Math.max(metrics.width,0)}px`} top={`${Math.max(0, metrics.offsetTop + (metrics.height/2) - 18)}px`} height="38px" pointerEvents="none" zIndex={1}>
-          <svg width="100%" height="100%" viewBox="0 0 1000 38" preserveAspectRatio="xMidYMid meet">
-            {electionYears.map((y,i)=>{
-              const t = (y-1950)/(2025-1950);
-              const x = Math.max(2, Math.min(998, t * 1000)); // keep within viewBox to avoid clipping
-              const data = tickData.get(y);
-              const color = data?.color || '#666';
+        {/* subtle yearly ticks */}
+        <Box position="absolute" left={`${metrics.offsetLeft}px`} width={`${Math.max(metrics.width,0)}px`} top={`${Math.max(0, metrics.offsetTop + (metrics.height/2) - 18)}px`} height="38px" pointerEvents="none" zIndex={0}>
+          <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} 38`} preserveAspectRatio="none">
+            {ALL_TIMELINE_YEARS.map((y)=>{
+              const ratio = getYearRatio(y);
+              const x = ratio * svgWidth;
+              const isDecade = y % 10 === 0;
+              const stroke = isDecade ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.25)';
+              const strokeWidth = isDecade ? 1.1 : 0.6;
+              const half = isDecade ? decadeTickHalf : yearTickHalf;
+              const centerY = 18;
               return (
-                <g key={y}>
-                  {/* Stem below track (rendered under the slider track via z-index) */}
-                  <line x1={x} y1={5} x2={x} y2={18} stroke={color} strokeWidth={2} strokeLinecap="round" />
-                </g>
+                <line
+                  key={`year-baseline-${y}`}
+                  x1={x}
+                  x2={x}
+                  y1={centerY - half}
+                  y2={centerY + half}
+                  stroke={stroke}
+                  strokeWidth={strokeWidth}
+                  shapeRendering="crispEdges"
+                />
               );
             })}
           </svg>
         </Box>
+        {/* election ticks - visual only */}
+        {showElectionPins && (
+          <Box position="absolute" left={`${metrics.offsetLeft}px`} width={`${Math.max(metrics.width,0)}px`} top={`${Math.max(0, metrics.offsetTop + (metrics.height/2) - 18)}px`} height="38px" pointerEvents="none" zIndex={1}>
+            <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} 38`} preserveAspectRatio="none">
+              {visibleElectionYears.map((y)=>{
+                const t = getYearRatio(y);
+                const x = t * svgWidth;
+                const data = tickData.get(y);
+                const color = data?.color || '#666';
+                return (
+                  <g key={y}>
+                    {/* Stem below track (rendered under the slider track via z-index) */}
+                    <line x1={x} y1={5} x2={x} y2={18} stroke={color} strokeWidth={2} strokeLinecap="round" />
+                  </g>
+                );
+              })}
+            </svg>
+          </Box>
+        )}
         {/* Slider track over stems, under pin heads */}
         <Box position="relative" zIndex={2}>
-          <Slider aria-label='timeline' min={1950} max={2025} step={1} value={year} onChange={onChange} mt={4}>
+          <Slider aria-label='timeline' min={TIMELINE_MIN_YEAR} max={TIMELINE_MAX_YEAR} step={1} value={year} onChange={onChange} mt={4}>
             <SliderTrack bg='black' ref={sliderTrackRef}>
               <SliderFilledTrack bg='black' />
             </SliderTrack>
@@ -243,7 +330,7 @@ export default function Timeline({ year, onChange }: { year: number; onChange: (
           </Slider>
         </Box>
       </Box>
-  <Heading as="h6" size="xs" pr={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-4px)' }}>2025</Heading>
+  <Heading as="h6" size="xs" pr={3} lineHeight={1} display="inline-flex" alignItems="center" style={{ transform:'translateY(-4px)' }}>{TIMELINE_MAX_YEAR}</Heading>
     </HStack>
   );
 }

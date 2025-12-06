@@ -10,16 +10,13 @@ import {
   InputGroup,
   InputLeftElement,
   InputRightElement,
-  Slider,
-  SliderFilledTrack,
-  SliderThumb,
-  SliderTrack,
   Stack,
   Text,
   useOutsideClick
 } from '@chakra-ui/react';
 import { FaChevronDown, FaSearch, FaTimes } from 'react-icons/fa';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import { CountryKey, YearData } from '@/types';
 import { useData } from './DataContext';
 import ViewToggle from './ViewToggle';
@@ -31,11 +28,51 @@ import Spectrum from './Spectrum';
 import LeaningBarChart from './LeaningBarChart';
 import PartyTable from './PartyTable';
 import EuropeanComparison from './EuropeanComparison';
+import Timeline, { TIMELINE_MAX_YEAR, TIMELINE_MIN_YEAR } from './Timeline';
 
 const COLUMN_COUNT = 3;
 
 export default function ComparisonView() {
   const { allData, year, setYear, comparisonSelections, setComparisonSelections } = useData();
+  const [yearQuery, setYearQuery] = useState(year.toString());
+
+  useEffect(()=>{
+    setYearQuery(year.toString());
+  },[year]);
+
+  const applyYearQuery = () => {
+    const trimmed = yearQuery.trim();
+    if (trimmed.length === 0) {
+      setYearQuery(year.toString());
+      return;
+    }
+    const requiredDigits = TIMELINE_MAX_YEAR.toString().length;
+    if (trimmed.length < requiredDigits) {
+      setYearQuery(year.toString());
+      return;
+    }
+    const parsed = Number(trimmed);
+    if (Number.isNaN(parsed)) {
+      setYearQuery(year.toString());
+      return;
+    }
+    const normalized = clamp(Math.round(parsed), TIMELINE_MIN_YEAR, TIMELINE_MAX_YEAR);
+    setYearQuery(normalized.toString());
+    if (normalized !== year) {
+      setYear(normalized);
+    }
+  };
+
+  const handleYearInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyYearQuery();
+    }
+  };
+
+  const handleYearInputBlur = () => {
+    applyYearQuery();
+  };
 
   const normalizeSelections = (values: (CountryKey | null)[]) => {
     if (values.length === COLUMN_COUNT) return values;
@@ -52,22 +89,6 @@ export default function ComparisonView() {
       .sort();
     return [...primary, ...extras] as CountryKey[];
   }, [allData]);
-
-  const timelineYears = useMemo(() => {
-    const set = new Set<number>();
-    Object.values(allData).forEach(entries =>
-      entries.forEach(entry => {
-        if (Number.isFinite(entry.year)) {
-          set.add(entry.year);
-        }
-      })
-    );
-    if (Number.isFinite(year)) {
-      set.add(year);
-    }
-    const sorted = Array.from(set).sort((a, b) => a - b);
-    return sorted.length ? sorted : [new Date().getFullYear()];
-  }, [allData, year]);
 
   const columnConfigs = selectedCountries.map((country, index) => {
     const blocked = new Set<CountryKey>();
@@ -134,8 +155,66 @@ export default function ComparisonView() {
             <ViewToggle width={240} borderless />
           </Flex>
         </Flex>
-        <Box mt={{ base: 3, md: 2 }}>
-          <ComparisonTimeline year={year} onChange={setYear} years={timelineYears} />
+        <Box mt={-2}>
+          <Flex align="center" gap={0} flexWrap="wrap">
+            <Box
+              bg="transparent"
+              color="black"
+              border="none"
+              borderRadius="0"
+              boxShadow="none"
+              px={4}
+              py={2}
+              height="54px"
+              display="flex"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="center"
+              minW="150px"
+            >
+              <InputGroup size="md" width="auto" display="flex" alignItems="center" justifyContent="center" mb={0}>
+                <InputLeftElement pointerEvents="none" height="100%" color="gray.500" top="50%" transform="translateY(-50%)" width="18px" left="2px" display="flex" justifyContent="center">
+                  <Box as="span" display="inline-flex" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <line x1="17" y1="17" x2="21" y2="21" />
+                    </svg>
+                  </Box>
+                </InputLeftElement>
+                <Input
+                  type="number"
+                  variant="unstyled"
+                  fontWeight="extrabold"
+                  fontSize="lg"
+                  letterSpacing="-0.02em"
+                  value={yearQuery}
+                  onChange={(event)=>setYearQuery(event.target.value)}
+                  onKeyDown={handleYearInputKeyDown}
+                  onBlur={handleYearInputBlur}
+                  min={TIMELINE_MIN_YEAR}
+                  max={TIMELINE_MAX_YEAR}
+                  step={1}
+                  inputMode="numeric"
+                  aria-label="Search year"
+                  paddingLeft="22px"
+                  width="88px"
+                  height="32px"
+                  color="black"
+                  _placeholder={{ color: 'gray.400' }}
+                />
+              </InputGroup>
+              <Text fontSize="xs" color="gray.600" lineHeight="1" mt={0}>Selected Year</Text>
+            </Box>
+            <Box flex={1} minW={0} width="100%">
+              <Timeline
+                year={year}
+                onChange={setYear}
+                showElectionPins={false}
+                borderless
+                tickHeights={{ decade: 12, year: 9 }}
+              />
+            </Box>
+          </Flex>
         </Box>
       </Box>
 
@@ -348,15 +427,15 @@ function CountryInsights({ country, data, year, allData, onClear }: CountryInsig
         </HStack>
       </Box>
 
-      <Box borderBottom="2px solid" borderColor="black" p={6} minH="360px" display="flex" alignItems="center" justifyContent="center">
+      <Box borderBottom="2px solid" borderColor="black" px={6} py={4} display="flex" alignItems="start" justifyContent="center">
         <ElectionDonut data={data} />
       </Box>
 
-      <Box borderBottom="2px solid" borderColor="black" p={0} bg="white">
+      <Box borderBottom="2px solid" borderColor="black" px={2} py={2} bg="white">
         <Spectrum data={data} size={520} />
       </Box>
 
-      <Box borderBottom="2px solid" borderColor="black" px={6} py={5}>
+      <Box borderBottom="2px solid" borderColor="black" px={6} py={2}>
         <LeaningBarChart data={data} />
       </Box>
 
@@ -364,40 +443,6 @@ function CountryInsights({ country, data, year, allData, onClear }: CountryInsig
         <PartyTable data={data} year={data.year} title={false} />
       </Box>
     </Box>
-  );
-}
-
-function ComparisonTimeline({ year, onChange, years }: { year: number; onChange: (value: number) => void; years: number[] }) {
-  const hasYears = years.length > 0;
-  const sortedYears = hasYears ? [...years].sort((a, b) => a - b) : [1950, 2025];
-  const minYear = sortedYears[0];
-  const maxYear = sortedYears[sortedYears.length - 1];
-  const clampedYear = clamp(year, minYear, maxYear);
-  const sliderValue = Number.isFinite(clampedYear) ? clampedYear : minYear;
-
-  return (
-    <Flex align="center" gap={1} flexWrap="wrap">
-      <Box borderRadius="14px" px={3} minW="104px">
-        <Text fontSize="xl" fontWeight="bold" lineHeight="1">
-          {sliderValue}
-        </Text>
-        <Text fontSize="xs" textTransform="uppercase" color="gray.500">
-          Selected Year
-        </Text>
-      </Box>
-      <Flex flex="1" align="center" gap={4} minW="220px">
-        <Text fontWeight="semibold" color="gray.700">{minYear}</Text>
-        <Slider value={sliderValue} min={minYear} max={maxYear} step={1} onChange={onChange} flex="1">
-          <SliderTrack bg="gray.200" height="4px" borderRadius="999px">
-            <SliderFilledTrack bg="black" />
-          </SliderTrack>
-          <SliderThumb boxSize={5} bg="white" border="2px solid black" _focus={{ boxShadow: 'none' }} _active={{ boxShadow: 'none' }}>
-            <Box as="span" width="0" height="0" borderLeft="5px solid transparent" borderRight="5px solid transparent" borderTop="9px solid black" transform="translateY(1px)" />
-          </SliderThumb>
-        </Slider>
-        <Text fontWeight="semibold" color="gray.700">{maxYear}</Text>
-      </Flex>
-    </Flex>
   );
 }
 

@@ -51,7 +51,7 @@ export default function Page() {
           }}
           aria-hidden={!country}
         >
-          <div style={{flex:1, background:'white', borderLeft:'1px solid black', borderRight:'2px solid black', borderTop:'2px solid black', borderBottom:'2px solid black', boxShadow:'-8px 0 24px rgba(0,0,0,0.25)', display:'flex'}}>
+          <div style={{flex:1, background:'white', borderLeft:'2px solid black', borderRight:'4px solid black', borderTop:'4px solid black', borderBottom:'4px solid black', boxShadow:'-8px 0 24px rgba(0,0,0,0.25)', display:'flex'}}>
             <CountryPanel country={country} data={currentYearData} />
           </div>
         </div>

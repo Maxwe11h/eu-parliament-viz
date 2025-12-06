@@ -1,16 +1,18 @@
 "use client";
-import { Box, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
+import { Box, HStack, Spinner, Text, VStack, Input, InputGroup, InputLeftElement } from '@chakra-ui/react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import * as topojson from 'topojson-client';
 // world-countries provides metadata to determine European countries
 import worldCountries from 'world-countries';
 import ViewToggle from './ViewToggle';
 import { CountryKey } from '@/types';
-import Timeline from './Timeline';
+import Timeline, { TIMELINE_MAX_YEAR, TIMELINE_MIN_YEAR } from './Timeline';
 import { useData } from './DataContext';
 import { majoritySocialCategory } from '@/lib/analytics';
 import { categoryPalette } from '@/lib/colors';
+import { getCountryFreedomYear, isCountryFree, NOT_FREE_COLOR } from '@/lib/democracy';
 
 // ISO alpha-2 to our country keys
 const keyByISO: Partial<Record<string, CountryKey>> = {
@@ -56,11 +58,51 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
   // rAF throttling for tooltip position updates
   const rAF = useRef<number|null>(null);
   const pendingPos = useRef<{x:number;y:number}|null>(null);
+  const selectedFreedomYear = selected ? getCountryFreedomYear(selected) : undefined;
 
   type CountryFeature = any;
   const [countries, setCountries] = useState<CountryFeature[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [yearQuery, setYearQuery] = useState(year.toString());
+
+  useEffect(()=>{
+    setYearQuery(year.toString());
+  },[year]);
+
+  const applyYearQuery = () => {
+    const trimmed = yearQuery.trim();
+    if (trimmed.length === 0) {
+      setYearQuery(year.toString());
+      return;
+    }
+    const requiredDigits = TIMELINE_MAX_YEAR.toString().length;
+    if (trimmed.length < requiredDigits) {
+      setYearQuery(year.toString());
+      return;
+    }
+    const parsed = Number(trimmed);
+    if (Number.isNaN(parsed)) {
+      setYearQuery(year.toString());
+      return;
+    }
+    const normalized = clamp(Math.round(parsed), TIMELINE_MIN_YEAR, TIMELINE_MAX_YEAR);
+    setYearQuery(normalized.toString());
+    if (normalized !== year) {
+      onYearChange(normalized);
+    }
+  };
+
+  const handleYearInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applyYearQuery();
+    }
+  };
+
+  const handleYearInputBlur = () => {
+    applyYearQuery();
+  };
 
   // Load world atlas topojson dynamically from CDN (client-side)
   useEffect(()=>{
@@ -89,6 +131,23 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
     svg.selectAll('*').remove();
     if (loading || error || countries.length===0) return;
 
+    const getFillColor = (key?: CountryKey) => {
+      if (!key) return '#CCCCCC';
+      if (!isCountryFree(key, year)) return NOT_FREE_COLOR;
+      const maj = majoritySocialCategory(allData, key, year);
+      const color = maj.category ? categoryPalette[maj.category] : undefined;
+      return color || '#000000';
+    };
+
+    const deriveSelectionStroke = (fill: string) => {
+      const base = d3.color(fill);
+      if (!base) return '#000000';
+      const hsl = d3.hsl(base as any);
+      hsl.s = Math.min(1, hsl.s + 0.12);
+      hsl.l = Math.max(0, Math.min(1, hsl.l * 0.55));
+      return hsl.formatHex();
+    };
+
     // ocean first (behind everything) and ignore mouse events
     // Ocean background fill entire SVG area
     // Ocean (background) now white
@@ -115,7 +174,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
     });
   // (No fitExtent) Keep fixed projection for consistent manual zoom/pan transforms.
 
-    g.selectAll<SVGPathElement, CountryFeature>('path.country')
+    const countryPaths = g.selectAll<SVGPathElement, CountryFeature>('path.country')
       .data(euroCountries)
       .enter()
       .append('path')
@@ -124,32 +183,26 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
       .attr('fill',(d:any)=>{
         const alpha2 = isoNumToAlpha2[Number(d.id)];
         const key = alpha2 ? keyByISO[alpha2] : undefined;
-        if (key) {
-          const maj = majoritySocialCategory(allData, key, year);
-          const color = maj.category ? categoryPalette[maj.category] : undefined;
-          return color || '#000000';
-        }
-        // Non-EU placeholder countries
-        return '#CCCCCC';
+        return getFillColor(key);
       })
-      // No stroke on individual country paths (internal borders drawn separately)
       .attr('stroke','none')
        .on('mouseenter', (event: MouseEvent, d: CountryFeature)=>{
         const alpha2 = isoNumToAlpha2[Number(d.id)];
         const key = alpha2 ? keyByISO[alpha2] : undefined;
         const tgt = d3.select(event.currentTarget as Element);
         if (key) {
-          const maj = majoritySocialCategory(allData, key, year);
-          const base = maj.category ? categoryPalette[maj.category] : '#222222';
-          // Slight darken on hover
-          const darkened = d3.color(base);
-          if (darkened) {
-            darkened.opacity = 1;
-            // apply 15% darken
-            const rgb = d3.rgb(darkened as any);
-            tgt.attr('fill', d3.rgb(Math.max(0, rgb.r-30), Math.max(0, rgb.g-30), Math.max(0, rgb.b-30)).toString());
+          if (!isCountryFree(key, year)) {
+            tgt.attr('fill', NOT_FREE_COLOR);
           } else {
-            tgt.attr('fill','#222222');
+            const base = getFillColor(key);
+            const darkened = d3.color(base);
+            if (darkened) {
+              darkened.opacity = 1;
+              const rgb = d3.rgb(darkened as any);
+              tgt.attr('fill', d3.rgb(Math.max(0, rgb.r-30), Math.max(0, rgb.g-30), Math.max(0, rgb.b-30)).toString());
+            } else {
+              tgt.attr('fill','#222222');
+            }
           }
         } else {
           tgt.attr('fill','#BBBBBB');
@@ -169,9 +222,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
         const key = alpha2 ? keyByISO[alpha2] : undefined;
         const tgt = d3.select(event.currentTarget as Element);
         if (key) {
-          const maj = majoritySocialCategory(allData, key, year);
-          const color = maj.category ? categoryPalette[maj.category] : '#000000';
-          tgt.attr('fill', color);
+          tgt.attr('fill', getFillColor(key));
         } else {
           tgt.attr('fill', '#CCCCCC');
         }
@@ -199,6 +250,35 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
         .attr('stroke-linejoin','round')
         .attr('stroke-linecap','round')
         .attr('shape-rendering','geometricPrecision');
+    }
+
+    const selectionFill = selected ? getFillColor(selected) : undefined;
+    const selectionStroke = selectionFill ? deriveSelectionStroke(selectionFill) : undefined;
+    countryPaths.attr('stroke',(d:any)=>{
+      const alpha2 = isoNumToAlpha2[Number(d.id)];
+      const key = alpha2 ? keyByISO[alpha2] : undefined;
+      return selected && key === selected && selectionStroke ? selectionStroke : 'none';
+    }).attr('stroke-width',(d:any)=>{
+      const alpha2 = isoNumToAlpha2[Number(d.id)];
+      const key = alpha2 ? keyByISO[alpha2] : undefined;
+      return selected && key === selected ? 3 : 0;
+    }).attr('vector-effect','non-scaling-stroke');
+
+    if (selected && selectionStroke) {
+      const selectedFeature = euroCountries.find((d:any)=>{
+        const alpha2 = isoNumToAlpha2[Number(d.id)];
+        const key = alpha2 ? keyByISO[alpha2] : undefined;
+        return key === selected;
+      });
+      if (selectedFeature) {
+        g.append('path')
+          .attr('d', path(selectedFeature as any)!)
+          .attr('fill','none')
+          .attr('stroke', selectionStroke)
+          .attr('stroke-width',4)
+          .attr('vector-effect','non-scaling-stroke')
+          .attr('pointer-events','none');
+      }
     }
 
     // simple drag panning (prevent text selection while dragging)
@@ -281,6 +361,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
                     label: cat,
                     color: categoryPalette[cat]
                   })),
+                  { label: 'No Parliament', color: NOT_FREE_COLOR },
                   { label: 'Non-EU nations', color: '#CCCCCC' }
                 ].map(item => (
                   <HStack key={item.label} spacing={2}>
@@ -302,19 +383,63 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
               border="2px solid black"
               borderRadius="12px"
               boxShadow="sm"
-              px={3}
-              height="54px" /* Match Timeline outer HStack height */
+              px={4}
+              py={2}
+              mb={0}
+              height="54px"
               display="flex"
               flexDirection="column"
               justifyContent="center"
-              alignItems="flex-start"
-              minW="76px"
+              alignItems="center"
+              textAlign="center"
+              minW="160px"
+              gap={0}
             >
-              <Text fontWeight="bold" fontSize="md" lineHeight="1" mb={0}>{year}</Text>
-              <Text fontSize="xs" color="gray.600" lineHeight="1">Selected Year</Text>
+              <InputGroup size="md" width="auto" display="flex" alignItems="center" justifyContent="center" mb={0}>
+                <InputLeftElement
+                  pointerEvents="none"
+                  height="100%"
+                  color="gray.500"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  width="18px"
+                  left="2px"
+                  display="flex"
+                  justifyContent="center"
+                >
+                  <Box as="span" display="inline-flex" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="7" />
+                      <line x1="17" y1="17" x2="21" y2="21" />
+                    </svg>
+                  </Box>
+                </InputLeftElement>
+                <Input
+                  type="number"
+                  variant="unstyled"
+                  fontWeight="extrabold"
+                  fontSize="lg"
+                  letterSpacing="-0.02em"
+                  value={yearQuery}
+                  onChange={(event)=>setYearQuery(event.target.value)}
+                  onKeyDown={handleYearInputKeyDown}
+                  onBlur={handleYearInputBlur}
+                  min={TIMELINE_MIN_YEAR}
+                  max={TIMELINE_MAX_YEAR}
+                  step={1}
+                  inputMode="numeric"
+                  aria-label="Search year"
+                  paddingLeft="22px"
+                  width="88px"
+                  height="32px"
+                  color="black"
+                  _placeholder={{ color: 'gray.400' }}
+                />
+              </InputGroup>
+              <Text fontSize="xs" color="gray.600" lineHeight="1" mt={0} pb={2}>Selected Year</Text>
             </Box>
             <Box flex={1} minW={0}>
-              <Timeline year={year} onChange={onYearChange} />
+              <Timeline year={year} onChange={onYearChange} minTickYear={selectedFreedomYear} />
             </Box>
           </Box>
         </Box>
