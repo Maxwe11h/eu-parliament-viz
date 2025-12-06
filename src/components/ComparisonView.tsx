@@ -33,7 +33,7 @@ import Timeline, { TIMELINE_MAX_YEAR, TIMELINE_MIN_YEAR } from './Timeline';
 const COLUMN_COUNT = 3;
 
 export default function ComparisonView() {
-  const { allData, year, setYear, comparisonSelections, setComparisonSelections } = useData();
+  const { allData, year, setYear, comparisonSelections, setComparisonSelections, populations } = useData();
   const [yearQuery, setYearQuery] = useState(year.toString());
 
   useEffect(()=>{
@@ -220,7 +220,12 @@ export default function ComparisonView() {
 
       <Box flex="1" overflowY="auto">
         <Box px={{ base: 0, md: 4 }} py={0} mb={-4}>
-          <EuropeanComparison allData={allData} year={year} onToggleCountry={handleToggleCountry} />
+          <EuropeanComparison
+            allData={allData}
+            year={year}
+            populations={populations}
+            onToggleCountry={handleToggleCountry}
+          />
         </Box>
         <Flex align="stretch" minH="100%" width="100%" px={{ base: 0, md: 4 }} py={0}>
           {columnConfigs.map((config, idx) => (

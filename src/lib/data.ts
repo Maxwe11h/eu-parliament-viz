@@ -1,6 +1,7 @@
 import Papa from 'papaparse';
 import { CompassRow, CountryKey, YearData } from '@/types';
 import { colorFromCategories } from './colors';
+import { countryLabels } from './countryMeta';
 
 // We'll import CSV via dynamic fetch (Next.js edge or node). For simplicity using require context is not available.
 // Provide function that reads from /data folder at runtime (server). In dev this is fine.
@@ -13,6 +14,14 @@ const countries: CountryKey[] = [
   'latvia','lithuania','luxembourg','malta','netherlands','poland','romania','slovakia','slovenia','sweden'
 ];
 export { countries };
+
+type PopulationMap = Partial<Record<CountryKey, number>>;
+let cachedPopulationMap: PopulationMap | null = null;
+const populationAliasMap: Record<string, CountryKey> = {
+  'czechia': 'czech-republic',
+  'czech republic': 'czech-republic',
+  'luxemburg': 'luxembourg'
+};
 
 function readCsv(country: CountryKey, suffix: 'parliament' | 'political-compass'): string {
   const filename = `${country}/${country}-${suffix === 'parliament' ? 'parliament-data' : 'political-compass'}.csv`;
@@ -146,4 +155,42 @@ export function getAllCountriesData() {
   const result: Record<CountryKey, YearData[]> = {} as any;
   for (const c of countries) result[c] = mergeYearData(c);
   return result;
+}
+
+export function getPopulationMap(): PopulationMap {
+  if (cachedPopulationMap) return cachedPopulationMap;
+  const csvPath = path.join(process.cwd(), 'data', 'EU_populations.csv');
+  if (!fs.existsSync(csvPath)) {
+    cachedPopulationMap = {};
+    return cachedPopulationMap;
+  }
+
+  const raw = fs.readFileSync(csvPath, 'utf8');
+  const parsed = Papa.parse(raw, {
+    header: true,
+    dynamicTyping: true,
+    delimiter: ';',
+    skipEmptyLines: true
+  });
+
+  const labelLookup = Object.entries(countryLabels).reduce<Record<string, CountryKey>>((acc, [key, label]) => {
+    acc[label.toLowerCase()] = key as CountryKey;
+    return acc;
+  }, {});
+
+  const map: PopulationMap = {};
+  for (const entry of parsed.data as any[]) {
+    if (!entry) continue;
+    const name = String(entry.Country || '').trim();
+    const population = Number(entry.Population);
+    if (!name || !Number.isFinite(population) || population <= 0) continue;
+    const normalized = name.toLowerCase();
+    const key = populationAliasMap[normalized] || labelLookup[normalized];
+    if (key) {
+      map[key] = population;
+    }
+  }
+
+  cachedPopulationMap = map;
+  return map;
 }

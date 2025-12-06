@@ -12,6 +12,7 @@ type DataContextValue = {
   currentYearData?: YearData;
   comparisonSelections: (CountryKey | null)[];
   setComparisonSelections: Dispatch<SetStateAction<(CountryKey | null)[]>>;
+  populations: Partial<Record<CountryKey, number>>;
 };
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -19,7 +20,13 @@ const DataContext = createContext<DataContextValue | undefined>(undefined);
 const DEFAULT_COMPARISON_COLUMNS = 3;
 const createEmptyComparisonSelections = () => Array.from({ length: DEFAULT_COMPARISON_COLUMNS }, () => null as CountryKey | null);
 
-export function DataProvider({ children, allData }: { children: React.ReactNode; allData: Record<CountryKey, YearData[]> }) {
+type DataProviderProps = {
+  children: React.ReactNode;
+  allData: Record<CountryKey, YearData[]>;
+  populations: Partial<Record<CountryKey, number>>;
+};
+
+export function DataProvider({ children, allData, populations }: DataProviderProps) {
   const [country,setCountry] = useState<CountryKey | undefined>();
   const [yearState,setYearState] = useState<number>(2018);
   const [comparisonSelections, setComparisonSelections] = useState<(CountryKey | null)[]>(() => createEmptyComparisonSelections());
@@ -65,7 +72,8 @@ export function DataProvider({ children, allData }: { children: React.ReactNode;
         setYear,
         currentYearData,
         comparisonSelections,
-        setComparisonSelections
+        setComparisonSelections,
+        populations
       }}
     >
       {children}

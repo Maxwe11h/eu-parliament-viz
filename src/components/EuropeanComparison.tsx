@@ -1,6 +1,23 @@
 "use client";
 
-import { Box, Flex, Text, Tooltip } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Flex,
+  Popover,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverTrigger,
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tooltip,
+  Tr
+} from '@chakra-ui/react';
 import * as d3 from 'd3';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CountryKey, YearData } from '@/types';
@@ -13,6 +30,7 @@ import {
 } from '@/lib/countryMeta';
 import { categoryPalette } from '@/lib/colors';
 import { majoritySocialCategory } from '@/lib/analytics';
+import { FaInfoCircle } from 'react-icons/fa';
 
 const LEANING_SEGMENTS = ['Far Left', 'Left', 'Centre-Left', 'Centre', 'Centre-Right', 'Right', 'Far Right'] as const;
 type SegmentKey = (typeof LEANING_SEGMENTS)[number];
@@ -20,6 +38,7 @@ type SegmentKey = (typeof LEANING_SEGMENTS)[number];
 type EuropeanComparisonProps = {
   allData: Record<CountryKey, YearData[]>;
   year: number;
+  populations: Partial<Record<CountryKey, number>>;
   onToggleCountry?: (country: CountryKey) => void;
 };
 
@@ -32,6 +51,7 @@ type BubbleDatum = {
   percentage: number;
   category: SegmentKey;
   color: string;
+  population?: number;
 };
 
 type BubbleWithPosition = BubbleDatum & { x: number; y: number; size: number };
@@ -48,6 +68,10 @@ type GeometrySnapshot = {
   innerRadius: number;
   signature: string;
 };
+
+type PopulationRange = { min: number; max: number } | null;
+type PopulationRowInfo = { key: CountryKey; label: string; population: number };
+type PopulationTableData = { rows: PopulationRowInfo[] };
 
 const BUBBLE_MIN = 20;
 const BUBBLE_MAX = 60;
@@ -68,7 +92,7 @@ const FLAG_BACKGROUND_OVERRIDES: Partial<Record<CountryKey, { backgroundSize?: s
   }
 };
 
-export default function EuropeanComparison({ allData, year, onToggleCountry }: EuropeanComparisonProps) {
+export default function EuropeanComparison({ allData, year, populations, onToggleCountry }: EuropeanComparisonProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const latestLayoutRef = useRef<BubbleWithPosition[]>([]);
@@ -76,6 +100,7 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
   const [width, setWidth] = useState(0);
   const [layout, setLayout] = useState<BubbleWithPosition[]>([]);
   const drawingWidth = width > 0 ? Math.min(width, VISUAL_MAX_WIDTH) : 0;
+  const populationFormatter = useMemo(() => new Intl.NumberFormat('en-US'), []);
 
   useEffect(() => {
     const node = canvasRef.current;
@@ -94,6 +119,17 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
     return [...ordered, ...extras];
   }, [allData]);
 
+  const populationRange = useMemo<PopulationRange>(() => {
+    const values = displayOrder
+      .map(key => populations[key])
+      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
+    if (!values.length) return null;
+    return {
+      min: Math.min(...values),
+      max: Math.max(...values)
+    };
+  }, [displayOrder, populations]);
+
   const bubbles = useMemo<BubbleDatum[]>(() => {
     return displayOrder.map(key => {
       const summary = majoritySocialCategory(allData, key, year);
@@ -106,10 +142,26 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
         flagUrl: getCountryFlagUrl(key, 160),
         percentage: summary.percentage ?? 0,
         category,
-        color: categoryPalette[category] || '#1a202c'
+        color: categoryPalette[category] || '#1a202c',
+        population: populations[key]
       };
     });
-  }, [allData, displayOrder, year]);
+  }, [allData, displayOrder, populations, year]);
+
+  const populationTable = useMemo<PopulationTableData>(() => {
+    const rows = displayOrder
+      .map(key => {
+        const value = populations[key];
+        if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+          return null;
+        }
+        return { key, label: getCountryLabel(key), population: value } as PopulationRowInfo;
+      })
+      .filter((row): row is PopulationRowInfo => row !== null)
+      .sort((a, b) => b.population - a.population);
+    return { rows };
+  }, [displayOrder, populations]);
+  const hasPopulationTable = populationTable.rows.length > 0;
 
   const geometry = useMemo<GeometrySnapshot>(() => {
     if (!drawingWidth) {
@@ -192,7 +244,7 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
       };
 
       sortedEntries.forEach((bubble, idx) => {
-        const size = bubbleSize(bubble.percentage);
+        const size = bubbleSize(bubble.population, populationRange, bubble.percentage);
         const ring = Math.floor(idx / basePerRing);
         const ringStartIndex = ring * basePerRing;
         const slotsInRing = Math.min(basePerRing, sortedEntries.length - ringStartIndex);
@@ -250,7 +302,7 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
       innerRadius,
       signature
     };
-  }, [bubbles, drawingWidth, displayOrder]);
+  }, [bubbles, drawingWidth, displayOrder, populationRange]);
 
   const { targets, arcs, labels, height: canvasHeight, centerX, centerY, signature } = geometry;
   const hasMeasurement = width > 0;
@@ -332,8 +384,17 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
     <Box px={{ base: 2, md: 4 }} py={{ base: 4, md: 6 }} width="100%">
       <Box border="2px solid" borderColor="black" borderRadius="32px" bg="white" overflow="hidden">
         <Box borderBottom="2px solid" borderColor="black" px={{ base: 4, md: 6 }} py={2}>
-          <Text fontWeight="bold" fontSize="lg">European Comparison</Text>
-          <Text fontSize="sm" color="gray.600">Countries grouped by majority social alignment</Text>
+          <Flex justify="space-between" align={{ base: 'flex-start', md: 'center' }} gap={3} flexWrap="wrap">
+            <Box>
+              <Text fontWeight="bold" fontSize="lg">European Comparison</Text>
+              <Text fontSize="sm" color="gray.600">
+                Countries grouped by majority social alignment • bubbles scale with national population
+              </Text>
+            </Box>
+            {hasPopulationTable && (
+              <PopulationReferencePopover rows={populationTable.rows} formatter={populationFormatter} />
+            )}
+          </Flex>
         </Box>
         <Box px={{ base: 2, md: 6 }} py={{ base: 4, md: 6 }}>
           <Box position="relative" height={`${canvasHeight}px`} ref={canvasRef}>
@@ -387,11 +448,11 @@ export default function EuropeanComparison({ allData, year, onToggleCountry }: E
 }
 
 function CountryBubble({ bubble, onToggleCountry }: { bubble: BubbleWithPosition; onToggleCountry?: (country: CountryKey) => void }) {
-  const { key, x, y, size, label, flag, flagUrl, percentage, color } = bubble;
+  const { key, x, y, size, label, flag, flagUrl, color } = bubble;
   const flagStyle = FLAG_BACKGROUND_OVERRIDES[key] || {};
 
   return (
-    <Tooltip label={`${label} • ${percentage.toFixed(1)}%`} openDelay={150} placement="top" hasArrow>
+    <Tooltip label={label} openDelay={150} placement="top" bg="gray.900" color="white" fontWeight="bold">
       <Box
         position="absolute"
         left={0}
@@ -441,7 +502,73 @@ function CountryBubble({ bubble, onToggleCountry }: { bubble: BubbleWithPosition
   );
 }
 
-function bubbleSize(percentage: number) {
+type PopulationReferencePopoverProps = {
+  rows: PopulationRowInfo[];
+  formatter: Intl.NumberFormat;
+};
+
+function PopulationReferencePopover({ rows, formatter }: PopulationReferencePopoverProps) {
+  return (
+    <Popover placement="bottom-end" trigger="click">
+      <PopoverTrigger>
+        <Button
+          size="sm"
+          variant="ghost"
+          border="1px solid"
+          borderColor="black"
+          borderRadius="999px"
+          leftIcon={<FaInfoCircle />}
+        >
+          Population table
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent border="2px solid" borderColor="black" borderRadius="24px" boxShadow="xl" maxW="360px">
+        <PopoverBody p={0}>
+          <Flex align="center" justify="space-between" px={4} pt={4} pb={2} borderBottom="1px solid" borderColor="gray.200">
+            <Text fontWeight="semibold" fontSize="sm" color="gray.700">
+              Population reference
+            </Text>
+            <PopoverCloseButton position="static" transform="none" borderRadius="999px" size="sm" />
+          </Flex>
+          <Box maxH="260px" overflowY="auto">
+            <Table size="sm" variant="simple">
+              <Thead bg="gray.50">
+                <Tr>
+                  <Th>Country</Th>
+                  <Th isNumeric>Population</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {rows.map(row => (
+                  <Tr key={row.key} _hover={{ bg: 'gray.50' }}>
+                    <Td fontWeight="medium">{row.label}</Td>
+                    <Td isNumeric>{formatter.format(row.population)}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function bubbleSize(population: number | undefined, range: PopulationRange, percentage: number) {
+  if (range && typeof population === 'number' && population > 0) {
+    const safeMin = Math.max(range.min, 1);
+    const safeMax = Math.max(range.max, safeMin + 1);
+    const logMin = Math.log(safeMin);
+    const logMax = Math.log(safeMax);
+    const logValue = Math.log(population);
+    const normalized = logMax - logMin === 0 ? 0.5 : (logValue - logMin) / (logMax - logMin);
+    const t = clamp(normalized, 0, 1);
+    return Math.round(BUBBLE_MIN + t * (BUBBLE_MAX - BUBBLE_MIN));
+  }
+  return bubbleSizeFromPercentage(percentage);
+}
+
+function bubbleSizeFromPercentage(percentage: number) {
   if (!Number.isFinite(percentage)) return BUBBLE_MIN;
   const clamped = clamp(percentage, 4, 55);
   const t = (clamped - 4) / (55 - 4);
