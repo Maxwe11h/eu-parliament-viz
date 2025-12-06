@@ -1,8 +1,23 @@
 "use client";
-import { Box, HStack, Spinner, Text, VStack, Input, InputGroup, InputLeftElement } from '@chakra-ui/react';
+import {
+  Box,
+  HStack,
+  Spinner,
+  Text,
+  VStack,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  IconButton,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverBody,
+  PopoverCloseButton
+} from '@chakra-ui/react';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, SyntheticEvent } from 'react';
 import * as topojson from 'topojson-client';
 // world-countries provides metadata to determine European countries
 import worldCountries from 'world-countries';
@@ -13,6 +28,61 @@ import { useData } from './DataContext';
 import { majoritySocialCategory } from '@/lib/analytics';
 import { categoryPalette } from '@/lib/colors';
 import { getCountryFreedomYear, isCountryFree, NOT_FREE_COLOR } from '@/lib/democracy';
+import { FaInfoCircle } from 'react-icons/fa';
+
+type LegendDetail = {
+  label: string;
+  color: string;
+  description: string;
+};
+
+const LEGEND_DETAILS: LegendDetail[] = [
+  {
+    label: 'Far Left',
+    color: categoryPalette['Far Left'],
+    description: 'Revolutionary or anti-capitalist factions that call for sweeping nationalizations, mass movements, and confrontational protest tactics to upend the market order.'
+  },
+  {
+    label: 'Left',
+    color: categoryPalette['Left'],
+    description: 'Mainstream social-democratic parties prioritizing progressive taxation, redistribution, powerful unions, and continually expanding public services while remaining pro-European.'
+  },
+  {
+    label: 'Centre-Left',
+    color: categoryPalette['Centre-Left'],
+    description: 'Moderate progressive blocs that keep market economies in place but pair them with climate investment, civil-liberties reforms, and carefully targeted regulation.'
+  },
+  {
+    label: 'Centre',
+    color: categoryPalette['Centre'],
+    description: 'Pragmatic liberal or Christian-democratic coalitions balancing regulation with open markets, focusing on EU integration, rule of law, and incremental reforms over ideology.'
+  },
+  {
+    label: 'Centre-Right',
+    color: categoryPalette['Centre-Right'],
+    description: 'Moderate conservatives favoring fiscal restraint, subsidies for strategic industries, and gradual reform while defending long-standing institutions and cultural norms.'
+  },
+  {
+    label: 'Right',
+    color: categoryPalette['Right'],
+    description: 'National- or liberal-conservative parties emphasizing sovereignty, tougher policing, skepticism toward Brussels mandates, and broad-based tax cuts for firms and families.'
+  },
+  {
+    label: 'Far Right',
+    color: categoryPalette['Far Right'],
+    description: 'Populist ultra-nationalist movements that promote ethnocentric identity politics, sharp migration limits, and expansions of executive authority over courts or media.'
+  },
+  {
+    label: 'No Parliament',
+    color: NOT_FREE_COLOR,
+    description: 'States without functioning democratic parliaments or with suspended legislatures in the selected year; data relies on third-party democracy watchdog reporting.'
+  },
+  {
+    label: 'Non-EU nations',
+    color: '#CCCCCC',
+    description: 'Neighboring countries drawn for spatial reference; they sit outside EU institutions and therefore fall outside every analytic comparison in this tool.'
+  }
+];
 
 // ISO alpha-2 to our country keys
 const keyByISO: Partial<Record<string, CountryKey>> = {
@@ -334,44 +404,40 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
             <Text fontWeight="semibold">European Parliamentary Visualizer</Text>
           </Box>
           <ViewToggle width={`${overlayBadgeWidth}px`} />
-          <Box
-            bg="white"
-            border="2px solid black"
-            borderRadius="10px"
-            boxShadow="sm"
-            px={3}
-            py={2}
-            display="inline-block"
-            alignSelf="flex-start"
-            cursor="pointer"
-            onClick={()=>setLegendOpen(o=>!o)}
-            aria-expanded={legendOpen}
-            w="fit-content"
-          >
-            <HStack spacing={2} mb={legendOpen ? 2 : 0}>
-              <Box as="span" aria-hidden="true" width="10px" height="10px" display="inline-block" transform={legendOpen? 'rotate(90deg)' : 'rotate(0deg)'} transition="transform 120ms ease">
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l8 7-8 7z"/></svg>
-              </Box>
-              <Text fontWeight="semibold" fontSize="sm">Political Alignment Legend</Text>
-            </HStack>
-            {legendOpen && (
-              <VStack align="start" spacing={1}>
-                {[
-                  ...(['Far Left','Left','Centre-Left','Centre','Centre-Right','Right','Far Right'] as const).map(cat => ({
-                    label: cat,
-                    color: categoryPalette[cat]
-                  })),
-                  { label: 'No Parliament', color: NOT_FREE_COLOR },
-                  { label: 'Non-EU nations', color: '#CCCCCC' }
-                ].map(item => (
-                  <HStack key={item.label} spacing={2}>
-                    <Box width="12px" height="12px" borderRadius="2px" bg={item.color} border="1px solid black" />
-                    <Text fontSize="sm">{item.label}</Text>
-                  </HStack>
-                ))}
-              </VStack>
-            )}
-          </Box>
+          <HStack align="flex-start" spacing={3}>
+            <Box
+              bg="white"
+              border="2px solid black"
+              borderRadius="10px"
+              boxShadow="sm"
+              px={3}
+              py={2}
+              display="inline-block"
+              alignSelf="flex-start"
+              cursor="pointer"
+              onClick={()=>setLegendOpen(o=>!o)}
+              aria-expanded={legendOpen}
+              w="fit-content"
+            >
+              <HStack spacing={2} mb={legendOpen ? 2 : 0} align="center">
+                <Box as="span" aria-hidden="true" width="10px" height="10px" display="inline-block" transform={legendOpen? 'rotate(90deg)' : 'rotate(0deg)'} transition="transform 120ms ease">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l8 7-8 7z"/></svg>
+                </Box>
+                <Text fontWeight="semibold" fontSize="sm">Political Alignment Legend</Text>
+              </HStack>
+              {legendOpen && (
+                <VStack align="start" spacing={1}>
+                  {LEGEND_DETAILS.map(item => (
+                    <HStack key={item.label} spacing={2}>
+                      <Box width="12px" height="12px" borderRadius="2px" bg={item.color} border="1px solid black" />
+                      <Text fontSize="sm">{item.label}</Text>
+                    </HStack>
+                  ))}
+                </VStack>
+              )}
+            </Box>
+            <LegendInfoPopover />
+          </HStack>
         </Box>
         {/* Timeline overlay (respect right offset when a panel is open) */}
         <Box position="absolute" left={0} right={timelineRightOffset ?? 0} bottom={0} px={4} pb={3} display="flex" justifyContent="center" zIndex={20} pointerEvents="auto" overflow="visible" style={{ transition: 'right 220ms ease-out' }}>
@@ -450,4 +516,70 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
 
 function clamp(v:number, min:number, max:number){
   return Math.max(min, Math.min(max, v));
+}
+
+function LegendInfoPopover() {
+  const stopPropagation = (event: SyntheticEvent) => event.stopPropagation();
+
+  return (
+    <Box onClick={stopPropagation} onMouseDown={stopPropagation} onPointerDown={stopPropagation}>
+      <Popover placement="right-start" trigger="click">
+        <PopoverTrigger>
+          <IconButton
+            aria-label="Political alignment legend info"
+            icon={<FaInfoCircle />}
+            size="xs"
+            variant="ghost"
+            border="1px solid black"
+            borderRadius="999px"
+            color="black"
+            _hover={{ bg: 'gray.100' }}
+          />
+        </PopoverTrigger>
+        <PopoverContent border="2px solid" borderColor="black" borderRadius="20px" boxShadow="xl" maxW="360px">
+          <PopoverBody p={0}>
+            <Box
+              px={4}
+              pt={4}
+              pb={2}
+              borderBottom="1px solid"
+              borderColor="gray.200"
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <Text fontWeight="semibold" fontSize="sm" color="gray.700">
+                Political alignment guide
+              </Text>
+              <PopoverCloseButton position="static" transform="none" borderRadius="999px" size="sm" />
+            </Box>
+            <Box px={4} py={3} maxH="320px" overflowY="auto">
+              <VStack align="stretch" spacing={3}>
+                {LEGEND_DETAILS.map(detail => (
+                  <HStack key={detail.label} align="flex-start" spacing={3}>
+                    <Box
+                      width="14px"
+                      height="14px"
+                      borderRadius="3px"
+                      bg={detail.color}
+                      border="1px solid black"
+                      mt={1}
+                    />
+                    <Box>
+                      <Text fontWeight="semibold" fontSize="sm">
+                        {detail.label}
+                      </Text>
+                      <Text fontSize="xs" color="gray.600">
+                        {detail.description}
+                      </Text>
+                    </Box>
+                  </HStack>
+                ))}
+              </VStack>
+            </Box>
+          </PopoverBody>
+        </PopoverContent>
+      </Popover>
+    </Box>
+  );
 }

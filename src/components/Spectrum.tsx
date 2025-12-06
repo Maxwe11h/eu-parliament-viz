@@ -1,8 +1,19 @@
 "use client";
-import { Box, Text } from '@chakra-ui/react';
+import {
+  Box,
+  HStack,
+  IconButton,
+  Popover,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverTrigger,
+  Text
+} from '@chakra-ui/react';
 import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { YearData } from '@/types';
+import { FaInfoCircle } from 'react-icons/fa';
 
 type PartyPoint = NonNullable<YearData>['parties'][number];
 
@@ -125,9 +136,47 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
   },[data, size]);
   return (
     <Box p={2} m={0}>
-      <Text fontWeight="bold" px={3} mb={0} lineHeight="1.1">Political Spectrum</Text>
-  <Text fontSize="xs" color="gray.600" px={3} mb={3} mt={0} lineHeight="1.1">X-axis displays social policy alignment and Y-axis displays economic policy alignment</Text>
+      <HStack align="flex-start" justify="space-between" px={3} spacing={3} mb={1}>
+        <Box>
+          <Text fontWeight="bold" lineHeight="1.1">Political Spectrum</Text>
+          <Text fontSize="xs" color="gray.600" mt={0} lineHeight="1.1">
+            X-axis displays social policy alignment and Y-axis displays economic policy alignment
+          </Text>
+        </Box>
+        <SpectrumInfoPopover />
+      </HStack>
       <svg ref={ref} width="100%" viewBox={`0 0 ${size} ${size}`} />
     </Box>
+  );
+}
+
+function SpectrumInfoPopover() {
+  return (
+    <Popover placement="left-start" trigger="click">
+      <PopoverTrigger>
+        <IconButton
+          aria-label="Political spectrum info"
+          icon={<FaInfoCircle />}
+          size="sm"
+          variant="ghost"
+          border="1px solid black"
+          borderRadius="999px"
+          color="black"
+          _hover={{ bg: 'gray.100' }}
+        />
+      </PopoverTrigger>
+      <PopoverContent border="2px solid" borderColor="black" borderRadius="20px" boxShadow="xl" maxW="340px">
+        <PopoverCloseButton />
+        <PopoverBody fontSize="sm" color="gray.700" lineHeight="1.4">
+          <Text fontWeight="semibold" mb={2} color="gray.800">Reading the spectrum</Text>
+          <Text>
+            The horizontal axis plots parties from economic left (state intervention, redistribution) to economic right
+            (market liberalism, deregulation). The vertical axis spans social policy, with authoritarian preferences at the
+            top (law-and-order, central authority) and libertarian preferences at the bottom (individual freedoms, civil
+            liberties). Circle size reflects share of the legislature in the selected election year.
+          </Text>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
   );
 }
