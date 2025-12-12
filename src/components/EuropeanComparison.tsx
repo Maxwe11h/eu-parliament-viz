@@ -158,17 +158,20 @@ export default function EuropeanComparison({ allData, genderData, year, populati
   }, [allData, displayOrder, populations, year]);
 
   const genderEntries = useMemo(() => {
-    return displayOrder.map(key => {
-      const entry = getGenderYearDataForCountry(genderData, key, year);
-      return entry ? {
-        key,
-        label: getCountryLabel(key),
-        pct: entry.femalePct,
-        population: populations[key],
-        flagUrl: getCountryFlagUrl(key, 160),
-        flag: getCountryFlagEmoji(key)
-      } : null;
-    }).filter((v): v is { key: CountryKey; label: string; pct: number; population?: number; flagUrl?: string; flag: string } => !!v);
+    return displayOrder
+      .map(key => {
+        const entry = getGenderYearDataForCountry(genderData, key, year);
+        if (!entry) return null;
+        return {
+          key,
+          label: getCountryLabel(key),
+          pct: entry.femalePct,
+          population: populations[key],
+          flagUrl: getCountryFlagUrl(key, 160),
+          flag: getCountryFlagEmoji(key)
+        } as GenderBarEntry;
+      })
+      .filter((v): v is GenderBarEntry => v !== null);
   }, [displayOrder, year, genderData, populations]);
 
   const populationTable = useMemo<PopulationTableData>(() => {
