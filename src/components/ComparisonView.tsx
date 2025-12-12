@@ -10,6 +10,12 @@ import {
   InputGroup,
   InputLeftElement,
   InputRightElement,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
   Stack,
   Text,
   useOutsideClick
@@ -18,11 +24,13 @@ import { FaChevronDown, FaSearch, FaTimes } from 'react-icons/fa';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import { CountryKey, YearData } from '@/types';
+import type { GenderYearData } from '@/types';
 import { useData } from './DataContext';
 import ViewToggle from './ViewToggle';
 import { getCountryLabel, orderedCountryKeys } from '@/lib/countryMeta';
 import { categoryPalette } from '@/lib/colors';
 import { getYearDataForCountry, majoritySocialCategory } from '@/lib/analytics';
+import { getGenderYearDataForCountry } from '@/lib/gender';
 import ElectionDonut from './ElectionDonut';
 import Spectrum from './Spectrum';
 import LeaningBarChart from './LeaningBarChart';
@@ -33,7 +41,7 @@ import Timeline, { TIMELINE_MAX_YEAR, TIMELINE_MIN_YEAR } from './Timeline';
 const COLUMN_COUNT = 3;
 
 export default function ComparisonView() {
-  const { allData, year, setYear, comparisonSelections, setComparisonSelections, populations } = useData();
+  const { allData, genderData, year, setYear, comparisonSelections, setComparisonSelections, populations } = useData();
   const [yearQuery, setYearQuery] = useState(year.toString());
 
   useEffect(()=>{
@@ -222,6 +230,7 @@ export default function ComparisonView() {
         <Box px={{ base: 0, md: 4 }} py={0} mb={-4}>
           <EuropeanComparison
             allData={allData}
+            genderData={genderData}
             year={year}
             populations={populations}
             onToggleCountry={handleToggleCountry}
@@ -239,6 +248,7 @@ export default function ComparisonView() {
               <CountryColumn
                 country={config.country}
                 data={config.data}
+                genderData={genderData}
                 year={year}
                 options={config.options}
                 allData={allData}
@@ -256,6 +266,7 @@ export default function ComparisonView() {
 type CountryColumnProps = {
   country: CountryKey | null;
   data?: YearData;
+  genderData: Record<CountryKey, GenderYearData[]>;
   year: number;
   options: CountryKey[];
   allData: Record<CountryKey, YearData[]>;
@@ -263,7 +274,7 @@ type CountryColumnProps = {
   onClear: () => void;
 };
 
-function CountryColumn({ country, data, year, options, allData, onSelect, onClear }: CountryColumnProps) {
+function CountryColumn({ country, data, genderData, year, options, allData, onSelect, onClear }: CountryColumnProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const selectorRef = useRef<HTMLDivElement>(null);
@@ -373,7 +384,7 @@ function CountryColumn({ country, data, year, options, allData, onSelect, onClea
           </Box>
         </Flex>
       ) : (
-        <CountryInsights country={country} data={data as YearData} year={year} allData={allData} onClear={onClear} />
+        <CountryInsights country={country} data={data as YearData} genderData={genderData} year={year} allData={allData} onClear={onClear} />
       )}
     </Box>
   );
@@ -382,15 +393,17 @@ function CountryColumn({ country, data, year, options, allData, onSelect, onClea
 type CountryInsightsProps = {
   country: CountryKey;
   data: YearData;
+  genderData: Record<CountryKey, GenderYearData[]>;
   year: number;
   allData: Record<CountryKey, YearData[]>;
   onClear: () => void;
 };
 
-function CountryInsights({ country, data, year, allData, onClear }: CountryInsightsProps) {
+function CountryInsights({ country, data, genderData, year, allData, onClear }: CountryInsightsProps) {
   const label = getCountryLabel(country);
   const majority = majoritySocialCategory(allData, country, year);
   const activeParties = data.parties.filter(p => (p.votes ?? 0) > 0).length;
+  const genderEntry = getGenderYearDataForCountry(genderData, country, year);
 
   return (
     <Box
@@ -434,6 +447,44 @@ function CountryInsights({ country, data, year, allData, onClear }: CountryInsig
 
       <Box borderBottom="2px solid" borderColor="black" px={6} py={4} display="flex" alignItems="start" justifyContent="center">
         <ElectionDonut data={data} />
+      </Box>
+
+      <Box borderBottom="2px solid" borderColor="black" px={6} py={4} display="flex" flexDirection="column" gap={3} bg="white">
+        <Text fontWeight="semibold" fontSize="md">Gender representation</Text>
+        {genderEntry ? (
+          <>
+            <Box width="100%" bg="#fde4ee" borderRadius="12px" overflow="hidden" border="1px solid" borderColor="#f4cfe0" height="24px">
+              <Box height="100%" width={`${Math.min(100, Math.max(0, genderEntry.femalePct))}%`} bg="#e75480" transition="width 200ms ease" />
+            </Box>
+            <HStack justify="space-between" spacing={4} fontSize="sm">
+              <Text fontWeight="semibold" color="gray.800">Women: {genderEntry.femalePct.toFixed(1)}%</Text>
+              <Text color="gray.700">Men: {genderEntry.malePct.toFixed(1)}%</Text>
+            </HStack>
+            <Table size="sm" width="100%">
+              <Thead>
+                <Tr borderBottom="2px solid" borderColor="gray.800">
+                  <Th fontSize="sm" fontWeight="bold" py={3}>Gender</Th>
+                  <Th isNumeric fontSize="sm" fontWeight="bold" py={3}>Seats</Th>
+                  <Th isNumeric fontSize="sm" fontWeight="bold" py={3}>%</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                <Tr bg="#fde4ee" borderBottom="1px solid" borderColor="#f4cfe0">
+                  <Td fontWeight="semibold" color="#7a1035">Female</Td>
+                  <Td isNumeric fontWeight="semibold" color="#7a1035">{genderEntry.female.toLocaleString()}</Td>
+                  <Td isNumeric fontWeight="semibold" color="#7a1035">{genderEntry.femalePct.toFixed(1)}%</Td>
+                </Tr>
+                <Tr bg="#e3eeff">
+                  <Td fontWeight="semibold" color="#103a7a">Male</Td>
+                  <Td isNumeric fontWeight="semibold" color="#103a7a">{genderEntry.male.toLocaleString()}</Td>
+                  <Td isNumeric fontWeight="semibold" color="#103a7a">{genderEntry.malePct.toFixed(1)}%</Td>
+                </Tr>
+              </Tbody>
+            </Table>
+          </>
+        ) : (
+          <Text fontSize="sm" color="gray.700">No gender data is available for {label}.</Text>
+        )}
       </Box>
 
       <Box borderBottom="2px solid" borderColor="black" px={2} py={2} bg="white">

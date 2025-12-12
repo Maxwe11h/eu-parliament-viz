@@ -3,6 +3,7 @@
 import {
   Box,
   Button,
+  ButtonGroup,
   Flex,
   Popover,
   PopoverBody,
@@ -20,7 +21,7 @@ import {
 } from '@chakra-ui/react';
 import * as d3 from 'd3';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CountryKey, YearData } from '@/types';
+import { CountryKey, GenderYearData, YearData } from '@/types';
 import {
   getCountryAbbreviation,
   getCountryFlagEmoji,
@@ -30,6 +31,7 @@ import {
 } from '@/lib/countryMeta';
 import { categoryPalette } from '@/lib/colors';
 import { majoritySocialCategory } from '@/lib/analytics';
+import { getGenderColor, getGenderYearDataForCountry, genderGradientStops } from '@/lib/gender';
 import { FaInfoCircle } from 'react-icons/fa';
 
 const LEANING_SEGMENTS = ['Far Left', 'Left', 'Centre-Left', 'Centre', 'Centre-Right', 'Right', 'Far Right'] as const;
@@ -37,6 +39,7 @@ type SegmentKey = (typeof LEANING_SEGMENTS)[number];
 
 type EuropeanComparisonProps = {
   allData: Record<CountryKey, YearData[]>;
+  genderData: Record<CountryKey, GenderYearData[]>;
   year: number;
   populations: Partial<Record<CountryKey, number>>;
   onToggleCountry?: (country: CountryKey) => void;
@@ -84,6 +87,7 @@ const SEGMENT_STROKE_ALPHA = 0.65;
 const SEGMENT_STROKE_WIDTH = 2.2;
 const LABEL_EDGE_PADDING = 32;
 const ANIMATION_DURATION = 80;
+const GENDER_MAX = 50;
 
 const FLAG_BACKGROUND_OVERRIDES: Partial<Record<CountryKey, { backgroundSize?: string; backgroundPosition?: string }>> = {
   ireland: {
@@ -92,15 +96,20 @@ const FLAG_BACKGROUND_OVERRIDES: Partial<Record<CountryKey, { backgroundSize?: s
   }
 };
 
-export default function EuropeanComparison({ allData, year, populations, onToggleCountry }: EuropeanComparisonProps) {
+export default function EuropeanComparison({ allData, genderData, year, populations, onToggleCountry }: EuropeanComparisonProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const latestLayoutRef = useRef<BubbleWithPosition[]>([]);
   const handledSignatureRef = useRef<string>('');
   const [width, setWidth] = useState(0);
   const [layout, setLayout] = useState<BubbleWithPosition[]>([]);
-  const drawingWidth = width > 0 ? Math.min(width, VISUAL_MAX_WIDTH) : 0;
+  const [lens, setLens] = useState<'political' | 'gender'>('political');
+  const measuredWidth = width > 0 ? width : 0;
+  const drawingWidth = measuredWidth > 0 ? Math.min(measuredWidth, VISUAL_MAX_WIDTH) : 0;
   const populationFormatter = useMemo(() => new Intl.NumberFormat('en-US'), []);
+  const headerSubtitle = lens === 'gender'
+    ? 'Female parliamentary share (0–50% scale)'
+    : 'Countries grouped by majority social alignment • bubbles scale with national population';
 
   useEffect(() => {
     const node = canvasRef.current;
@@ -147,6 +156,20 @@ export default function EuropeanComparison({ allData, year, populations, onToggl
       };
     });
   }, [allData, displayOrder, populations, year]);
+
+  const genderEntries = useMemo(() => {
+    return displayOrder.map(key => {
+      const entry = getGenderYearDataForCountry(genderData, key, year);
+      return entry ? {
+        key,
+        label: getCountryLabel(key),
+        pct: entry.femalePct,
+        population: populations[key],
+        flagUrl: getCountryFlagUrl(key, 160),
+        flag: getCountryFlagEmoji(key)
+      } : null;
+    }).filter((v): v is { key: CountryKey; label: string; pct: number; population?: number; flagUrl?: string; flag: string } => !!v);
+  }, [displayOrder, year, genderData, populations]);
 
   const populationTable = useMemo<PopulationTableData>(() => {
     const rows = displayOrder
@@ -306,8 +329,11 @@ export default function EuropeanComparison({ allData, year, populations, onToggl
 
   const { targets, arcs, labels, height: canvasHeight, centerX, centerY, signature } = geometry;
   const hasMeasurement = width > 0;
-  const innerWidthPx = hasMeasurement ? `${drawingWidth}px` : '100%';
-  const svgWidthValue = hasMeasurement ? drawingWidth : Math.max(width, 1) || 1;
+  const fallbackWidth = 960;
+  const resolvedWidth = hasMeasurement ? Math.max(width, 1) : fallbackWidth;
+  const innerWidthPx = `${Math.min(resolvedWidth, VISUAL_MAX_WIDTH)}px`;
+  const svgWidthValue = Math.min(resolvedWidth, VISUAL_MAX_WIDTH);
+  const genderWidth = hasMeasurement ? Math.max(width, 1) : fallbackWidth;
 
   useEffect(() => {
     latestLayoutRef.current = layout;
@@ -380,6 +406,8 @@ export default function EuropeanComparison({ allData, year, populations, onToggl
     };
   }, [targets, signature, centerX, centerY]);
 
+  const genderChartHeight = 480;
+
   return (
     <Box px={{ base: 2, md: 4 }} py={{ base: 4, md: 6 }} width="100%">
       <Box border="2px solid" borderColor="black" borderRadius="32px" bg="white" overflow="hidden">
@@ -387,59 +415,91 @@ export default function EuropeanComparison({ allData, year, populations, onToggl
           <Flex justify="space-between" align={{ base: 'flex-start', md: 'center' }} gap={3} flexWrap="wrap">
             <Box>
               <Text fontWeight="bold" fontSize="lg">European Comparison</Text>
-              <Text fontSize="sm" color="gray.600">
-                Countries grouped by majority social alignment • bubbles scale with national population
-              </Text>
+              <Text fontSize="sm" color="gray.600">{headerSubtitle}</Text>
             </Box>
-            {hasPopulationTable && (
-              <PopulationReferencePopover rows={populationTable.rows} formatter={populationFormatter} />
-            )}
+            <Flex gap={2} align="center">
+              <ButtonGroup size="sm" isAttached variant="outline">
+                <Button
+                  variant={lens === 'political' ? 'solid' : 'ghost'}
+                  colorScheme="gray"
+                  onClick={() => setLens('political')}
+                >
+                  Political
+                </Button>
+                <Button
+                  variant={lens === 'gender' ? 'solid' : 'ghost'}
+                  colorScheme="gray"
+                  onClick={() => setLens('gender')}
+                >
+                  Gender
+                </Button>
+              </ButtonGroup>
+              {hasPopulationTable && (
+                <PopulationReferencePopover rows={populationTable.rows} formatter={populationFormatter} />
+              )}
+            </Flex>
           </Flex>
         </Box>
         <Box px={{ base: 2, md: 6 }} py={{ base: 4, md: 6 }}>
-          <Box position="relative" height={`${canvasHeight}px`} ref={canvasRef}>
-            <Box position="absolute" inset={0} pointerEvents="none" display="flex" justifyContent="center">
-              <Box position="relative" width={innerWidthPx} height="100%">
-                <svg
-                  width="100%"
-                  height="100%"
-                  viewBox={`0 0 ${svgWidthValue} ${canvasHeight}`}
-                  preserveAspectRatio="xMidYMid meet"
-                >
-                  <g transform={`translate(${centerX}, ${centerY})`}>
-                    {arcs.map(arc => (
-                      <path
-                        key={arc.segment}
-                        d={arc.path}
-                        fill={withAlpha(categoryPalette[arc.segment], SEGMENT_FILL_ALPHA)}
-                        stroke={withAlpha(categoryPalette[arc.segment], SEGMENT_STROKE_ALPHA)}
-                        strokeWidth={SEGMENT_STROKE_WIDTH}
-                      />
-                    ))}
-                  </g>
-                  {labels.map(label => (
-                    <text
-                      key={label.segment}
-                      x={label.x}
-                      y={label.y}
-                      textAnchor="middle"
-                      fontSize={12}
-                      fontWeight={600}
-                      fill="#1a202c"
+          <Box
+            position="relative"
+            height={lens === 'political' ? `${canvasHeight}px` : `${genderChartHeight}px`}
+            ref={canvasRef}
+          >
+            {lens === 'political' ? (
+              <>
+                <Box position="absolute" inset={0} pointerEvents="none" display="flex" justifyContent="center">
+                  <Box position="relative" width={innerWidthPx} height="100%">
+                    <svg
+                      width="100%"
+                      height="100%"
+                      viewBox={`0 0 ${svgWidthValue} ${canvasHeight}`}
+                      preserveAspectRatio="xMidYMid meet"
                     >
-                      {label.segment}
-                    </text>
-                  ))}
-                </svg>
-              </Box>
-            </Box>
-            <Box position="absolute" inset={0} pointerEvents="none" display="flex" justifyContent="center">
-              <Box position="relative" width={innerWidthPx} height="100%">
-                {layout.map((bubble: BubbleWithPosition) => (
-                  <CountryBubble key={bubble.key} bubble={bubble} onToggleCountry={onToggleCountry} />
-                ))}
-              </Box>
-            </Box>
+                      <g transform={`translate(${centerX}, ${centerY})`}>
+                        {arcs.map(arc => (
+                          <path
+                            key={arc.segment}
+                            d={arc.path}
+                            fill={withAlpha(categoryPalette[arc.segment], SEGMENT_FILL_ALPHA)}
+                            stroke={withAlpha(categoryPalette[arc.segment], SEGMENT_STROKE_ALPHA)}
+                            strokeWidth={SEGMENT_STROKE_WIDTH}
+                          />
+                        ))}
+                      </g>
+                      {labels.map(label => (
+                        <text
+                          key={label.segment}
+                          x={label.x}
+                          y={label.y}
+                          textAnchor="middle"
+                          fontSize={12}
+                          fontWeight={600}
+                          fill="#1a202c"
+                        >
+                          {label.segment}
+                        </text>
+                      ))}
+                    </svg>
+                  </Box>
+                </Box>
+                <Box position="absolute" inset={0} pointerEvents="none" display="flex" justifyContent="center">
+                  <Box position="relative" width={innerWidthPx} height="100%">
+                    {layout.map((bubble: BubbleWithPosition) => (
+                      <CountryBubble key={bubble.key} bubble={bubble} onToggleCountry={onToggleCountry} />
+                    ))}
+                  </Box>
+                </Box>
+              </>
+            ) : (
+              <GenderBarComparison
+                entries={genderEntries as GenderBarEntry[]}
+                width={genderWidth}
+                containerWidth="100%"
+                populationRange={populationRange}
+                onToggleCountry={onToggleCountry}
+              />
+            )}
           </Box>
         </Box>
       </Box>
@@ -499,6 +559,193 @@ function CountryBubble({ bubble, onToggleCountry }: { bubble: BubbleWithPosition
         )}
       </Box>
     </Tooltip>
+  );
+}
+
+type GenderBarEntry = { key: CountryKey; label: string; pct: number; population?: number; flagUrl?: string; flag: string };
+
+function GenderBarComparison({ entries, width, containerWidth, populationRange, onToggleCountry }: { entries: GenderBarEntry[]; width: number; containerWidth: string | number; populationRange: PopulationRange; onToggleCountry?: (country: CountryKey) => void }) {
+  const chartHeight = 480;
+  const leftPad = 56;
+  const rightPad = 56;
+  const barHeight = 16;
+  const deadZonePadding = 10;
+  const effectiveWidth = width > 0 ? width -4 : 960;
+  const usableWidth = Math.max(effectiveWidth - leftPad - rightPad, 1);
+  const bandY = chartHeight * 0.64;
+  const tickYOffset = -27;
+  const bandHalfHeight = 220;
+  const pad = 3;
+  const baseLaneOffset = 120;
+
+  if (!entries.length) {
+    return (
+      <Box border="1px dashed" borderColor="gray.300" borderRadius="20px" p={6} textAlign="center" color="gray.600">
+        No gender data available for the selected year.
+      </Box>
+    );
+  }
+
+  const tickValues = Array.from({ length: GENDER_MAX / 10 + 1 }, (_, idx) => idx * 10);
+  const populationWeighted = entries
+    .map(entry => (typeof entry.population === 'number' && entry.population > 0 ? entry : null))
+    .filter((v): v is GenderBarEntry => v !== null);
+  const weightedTotal = populationWeighted.reduce((sum, entry) => sum + entry.pct * (entry.population as number), 0);
+  const populationSum = populationWeighted.reduce((sum, entry) => sum + (entry.population as number), 0);
+  const unweightedAverage = entries.reduce((sum, entry) => sum + entry.pct, 0) / entries.length;
+  const averagePct = populationSum > 0 ? weightedTotal / populationSum : unweightedAverage;
+  const clampedAverage = clamp(averagePct, 0, GENDER_MAX);
+  const averageX = leftPad + (clampedAverage / GENDER_MAX) * usableWidth;
+
+  // Build initial nodes
+  const nodes = entries.map((entry, idx) => {
+    const clamped = clamp(entry.pct, 0, GENDER_MAX);
+    const ratio = clamped / GENDER_MAX;
+    const baseX = leftPad + ratio * usableWidth;
+    const size = bubbleSize(entry.population, populationRange, entry.pct);
+    const jitterX = ((hashString(`${entry.key}-x`) % 100) / 100 - 0.5) * Math.min(18, size * 0.28);
+    const jitterY = ((hashString(`${entry.key}-y`) % 100) / 100 - 0.5) * 10;
+    const laneDirection = -1; // keep bubbles above the bar
+    const baseY = bandY + laneDirection * (baseLaneOffset + (idx % 4) * 8);
+    return {
+      entry,
+      x: baseX + jitterX,
+      y: baseY + jitterY,
+      size
+    };
+  });
+
+  // Resolve overlaps with simple force iterations
+  for (let iter = 0; iter < 10; iter++) {
+    let moved = false;
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i];
+        const b = nodes[j];
+        const minDist = (a.size + b.size) / 2 + pad;
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let dist = Math.hypot(dx, dy);
+        if (dist === 0) {
+          dist = 0.001;
+          dx = 0.001;
+          dy = 0.001;
+        }
+        if (dist < minDist) {
+          const overlap = (minDist - dist) / 2;
+          const nx = dx / dist;
+          const ny = dy / dist;
+          a.x -= nx * overlap;
+          a.y -= ny * overlap;
+          b.x += nx * overlap;
+          b.y += ny * overlap;
+          moved = true;
+        }
+      }
+    }
+    // Clamp inside bounds each iteration
+    nodes.forEach(node => {
+      const radius = node.size / 2;
+      node.x = clamp(node.x, leftPad + radius, leftPad + usableWidth - radius);
+      const minY = bandY - bandHalfHeight + radius;
+      const maxY = bandY - (barHeight / 2 + deadZonePadding + radius);
+      node.y = clamp(node.y, minY, maxY);
+    });
+    if (!moved) break;
+  }
+
+  return (
+    <Box position="relative" height={`${chartHeight}px`} width={containerWidth}>
+      <Box
+        position="absolute"
+        left={`${leftPad}px`}
+        right={`${rightPad}px`}
+        top={`${bandY - barHeight / 2}px`}
+        height={`${barHeight}px`}
+        borderRadius="12px"
+        border="1px solid #f4cfe0"
+        bg={`linear-gradient(90deg, ${genderGradientStops.start} 0%, ${genderGradientStops.end} 100%)`}
+      />
+      {tickValues.map(tick => {
+        const ratio = tick / GENDER_MAX;
+        const x = leftPad + ratio * usableWidth;
+        return (
+          <Box
+            key={tick}
+            position="absolute"
+            left={`${x}px`}
+            top={`${bandY - barHeight / 2 + tickYOffset}px`}
+            transform="translateX(-50%)"
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+          >
+            <Text mb={1} fontSize="xs" color="gray.700" textAlign="center">
+              {tick}%
+            </Text>
+            <Box width="2px" height="28px" bg="gray.700" opacity={0.7} />
+          </Box>
+        );
+      })}
+      <Box position="absolute" left={`${averageX}px`} top={`${bandY + barHeight / 2 + 10}px`} transform="translateX(-50%)" textAlign="center" pointerEvents="none">
+        <Box
+          width="0"
+          height="0"
+          borderLeft="8px solid transparent"
+          borderRight="8px solid transparent"
+          borderTop="12px solid black"
+          mx="auto"
+        />
+        <Text mt={1} fontSize="xs" fontWeight="semibold" color="gray.800">
+          EU avg {clampedAverage.toFixed(1)}%
+        </Text>
+      </Box>
+      {nodes.map(node => {
+        const { entry, x, y, size } = node;
+        const color = getGenderColor(entry.pct);
+        const flagStyle = FLAG_BACKGROUND_OVERRIDES[entry.key] || {};
+        return (
+          <Tooltip key={entry.key} label={`${entry.label} • ${entry.pct.toFixed(1)}% women`} openDelay={80} bg="gray.900" color="white" fontWeight="bold">
+            <Box
+              position="absolute"
+              left={`${x}px`}
+              top={`${y}px`}
+              transform="translate(-50%, -50%)"
+              width={`${size}px`}
+              height={`${size}px`}
+              borderRadius="50%"
+              bg={entry.flagUrl ? 'transparent' : color}
+              border="1px solid #1a1a1a"
+              boxShadow={`0 6px 18px rgba(0, 0, 0, 0.2), 0 0 0 3px ${color}, 0 0 0 6px rgba(255, 255, 255, 0.35)`}
+              cursor={onToggleCountry ? 'pointer' : 'default'}
+              onClick={() => onToggleCountry?.(entry.key)}
+              transition="transform 280ms cubic-bezier(0.4, 0, 0.2, 1), width 280ms ease, height 280ms ease"
+              style={{
+                backgroundImage: entry.flagUrl ? `url(${entry.flagUrl})` : undefined,
+                backgroundSize: flagStyle.backgroundSize ?? 'cover',
+                backgroundPosition: flagStyle.backgroundPosition ?? 'center',
+                backgroundRepeat: 'no-repeat'
+              }}
+            >
+              {!entry.flagUrl && (
+                <Flex
+                  position="relative"
+                  zIndex={1}
+                  direction="column"
+                  align="center"
+                  justify="center"
+                  height="100%"
+                >
+                  <Text fontSize={size > 60 ? '2xl' : 'xl'} lineHeight="1">
+                    {entry.flag}
+                  </Text>
+                </Flex>
+              )}
+            </Box>
+          </Tooltip>
+        );
+      })}
+    </Box>
   );
 }
 
