@@ -28,6 +28,8 @@ export type CountryKey =
   | 'slovenia'
   | 'sweden';
 
+export type DataView = 'political' | 'gender';
+
 export type ParliamentRow = {
   Year: number;
   Total: number;
@@ -62,4 +64,13 @@ export type YearData = {
     social?: number;
     socialCategory?: string;
   }>; 
+};
+
+export type GenderYearData = {
+  year: number;
+  male: number;
+  female: number;
+  total: number;
+  femalePct: number;
+  malePct: number;
 };

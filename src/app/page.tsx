@@ -6,7 +6,7 @@ import { CountryKey, YearData } from '@/types';
 import { useData } from '@/components/DataContext';
 
 export default function Page() {
-  const { country, setCountry, year, setYear, currentYearData } = useData();
+  const { country, setCountry, year, setYear, currentYearData, currentGenderData } = useData();
   const handleSelect = (c: CountryKey) => {
     // Toggle selection: clicking the active country deselects it
     if (country && c === country) {
@@ -52,7 +52,7 @@ export default function Page() {
           aria-hidden={!country}
         >
           <div style={{flex:1, background:'white', borderLeft:'2px solid black', borderRight:'4px solid black', borderTop:'4px solid black', borderBottom:'4px solid black', boxShadow:'-8px 0 24px rgba(0,0,0,0.25)', display:'flex'}}>
-            <CountryPanel country={country} data={currentYearData} />
+            <CountryPanel country={country} data={currentYearData} genderData={currentGenderData} />
           </div>
         </div>
       </div>

@@ -3,13 +3,14 @@ import { Inter } from 'next/font/google';
 import ThemeProviderClient from '@/components/ThemeProviderClient';
 import './globals.css';
 import { DataProvider } from '@/components/DataContext';
-import { getAllCountriesData, getPopulationMap } from '@/lib/data';
+import { getAllCountriesData, getAllGenderData, getPopulationMap } from '@/lib/data';
 import { ColorModeScript } from '@chakra-ui/react';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const allData = getAllCountriesData();
+  const genderData = getAllGenderData();
   const populations = getPopulationMap();
   return (
     <html lang="en" className={inter.className}>
@@ -19,7 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <Suspense fallback={null}>
           <ThemeProviderClient>
-            <DataProvider allData={allData} populations={populations}>
+            <DataProvider allData={allData} genderData={genderData} populations={populations}>
               {children}
             </DataProvider>
           </ThemeProviderClient>

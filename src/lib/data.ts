@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { CompassRow, CountryKey, YearData } from '@/types';
+import { CompassRow, CountryKey, GenderYearData, YearData } from '@/types';
 import { colorFromCategories } from './colors';
 import { countryLabels } from './countryMeta';
 
@@ -23,8 +23,10 @@ const populationAliasMap: Record<string, CountryKey> = {
   'luxemburg': 'luxembourg'
 };
 
-function readCsv(country: CountryKey, suffix: 'parliament' | 'political-compass'): string {
-  const filename = `${country}/${country}-${suffix === 'parliament' ? 'parliament-data' : 'political-compass'}.csv`;
+type DataFileSuffix = 'parliament' | 'political-compass' | 'gender';
+
+function readCsv(country: CountryKey, suffix: DataFileSuffix): string {
+  const filename = `${country}/${country}-${suffix === 'parliament' ? 'parliament-data' : suffix === 'gender' ? 'gender-data' : 'political-compass'}.csv`;
   const p = path.join(process.cwd(), 'data', filename);
   return fs.readFileSync(p, 'utf8');
 }
@@ -87,6 +89,30 @@ export function loadParliament(country: CountryKey): YearData[] {
     yearData.push({ year, total, sumParties: sumSeats, parties });
   }
   return yearData.sort((a,b)=>a.year-b.year);
+}
+
+export function loadGender(country: CountryKey): GenderYearData[] {
+  const raw = readCsv(country, 'gender');
+  const parsed = Papa.parse(raw, { header: true, dynamicTyping: true });
+  const rows = parsed.data as any[];
+  const yearData: GenderYearData[] = [];
+
+  for (const row of rows) {
+    if (!row || !row.Year) continue;
+    const year = Number(row.Year);
+    const male = Number(row.Male) || 0;
+    const female = Number(row.Female) || 0;
+    const totalRaw = Number(row.Total) || 0;
+    const total = totalRaw > 0 ? totalRaw : Math.max(male + female, 0);
+    const denom = total || (male + female);
+    const femalePct = denom ? (female / denom) * 100 : 0;
+    const malePct = denom ? (male / denom) * 100 : 0;
+    yearData.push({ year, male, female, total, femalePct, malePct });
+  }
+
+  return yearData
+    .filter(entry => Number.isFinite(entry.year))
+    .sort((a,b)=>a.year-b.year);
 }
 
 // Canonicalize acronyms so that differences in separators, case, diacritics and parentheses don't break joins.
@@ -154,6 +180,12 @@ export function mergeYearData(country: CountryKey): YearData[] {
 export function getAllCountriesData() {
   const result: Record<CountryKey, YearData[]> = {} as any;
   for (const c of countries) result[c] = mergeYearData(c);
+  return result;
+}
+
+export function getAllGenderData() {
+  const result: Record<CountryKey, GenderYearData[]> = {} as any;
+  for (const c of countries) result[c] = loadGender(c);
   return result;
 }
 

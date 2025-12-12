@@ -22,12 +22,14 @@ import * as topojson from 'topojson-client';
 // world-countries provides metadata to determine European countries
 import worldCountries from 'world-countries';
 import ViewToggle from './ViewToggle';
+import DataLensToggle from './DataLensToggle';
 import { CountryKey } from '@/types';
 import Timeline, { TIMELINE_MAX_YEAR, TIMELINE_MIN_YEAR } from './Timeline';
 import { useData } from './DataContext';
 import { majoritySocialCategory } from '@/lib/analytics';
 import { categoryPalette } from '@/lib/colors';
 import { getCountryFreedomYear, isCountryFree, NOT_FREE_COLOR } from '@/lib/democracy';
+import { formatFemaleShare, getGenderColor, getGenderYearDataForCountry, genderGradientStops } from '@/lib/gender';
 import { FaInfoCircle } from 'react-icons/fa';
 
 type LegendDetail = {
@@ -36,7 +38,7 @@ type LegendDetail = {
   description: string;
 };
 
-const LEGEND_DETAILS: LegendDetail[] = [
+const POLITICAL_LEGEND_DETAILS: LegendDetail[] = [
   {
     label: 'Far Left',
     color: categoryPalette['Far Left'],
@@ -73,7 +75,20 @@ const LEGEND_DETAILS: LegendDetail[] = [
     description: 'Populist ultra-nationalist movements that promote ethnocentric identity politics, sharp migration limits, and expansions of executive authority over courts or media.'
   },
   {
-    label: 'No Parliament',
+    label: 'No Elections',
+    color: NOT_FREE_COLOR,
+    description: 'States without functioning democratic parliaments or with suspended legislatures in the selected year; data relies on third-party democracy watchdog reporting.'
+  },
+  {
+    label: 'Non-EU nations',
+    color: '#CCCCCC',
+    description: 'Neighboring countries drawn for spatial reference; they sit outside EU institutions and therefore fall outside every analytic comparison in this tool.'
+  }
+];
+
+const GENDER_STATIC_ITEMS: LegendDetail[] = [
+  {
+    label: 'No Elections',
     color: NOT_FREE_COLOR,
     description: 'States without functioning democratic parliaments or with suspended legislatures in the selected year; data relies on third-party democracy watchdog reporting.'
   },
@@ -123,7 +138,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverPos,setHoverPos]=useState<{x:number;y:number}|null>(null);
   // Access all data for coloring
-  const { allData } = useData();
+  const { allData, genderData, dataView } = useData();
   const [legendOpen, setLegendOpen] = useState(true);
   // rAF throttling for tooltip position updates
   const rAF = useRef<number|null>(null);
@@ -204,6 +219,11 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
     const getFillColor = (key?: CountryKey) => {
       if (!key) return '#CCCCCC';
       if (!isCountryFree(key, year)) return NOT_FREE_COLOR;
+      if (dataView === 'gender') {
+        const genderEntry = getGenderYearDataForCountry(genderData, key, year);
+        if (!genderEntry) return '#CCCCCC';
+        return getGenderColor(genderEntry.femalePct);
+      }
       const maj = majoritySocialCategory(allData, key, year);
       const color = maj.category ? categoryPalette[maj.category] : undefined;
       return color || '#000000';
@@ -374,9 +394,11 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
       });
     svg.on('mouseup', ()=>{ dragging.current = null; });
     svg.on('mouseleave', ()=>{ dragging.current = null; });
-  },[countries, selected, scale, tx, ty, loading, error, year, allData]);
+  },[countries, selected, scale, tx, ty, loading, error, year, allData, genderData, dataView]);
 
   const overlayBadgeWidth = 320;
+  const legendItems = dataView === 'gender' ? GENDER_STATIC_ITEMS : POLITICAL_LEGEND_DETAILS;
+  const legendTitle = dataView === 'gender' ? 'Gender Representation Legend' : 'Political Alignment Legend';
 
   return (
     <VStack align="stretch" spacing={0} h="100%" flex={1}>
@@ -404,6 +426,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
             <Text fontWeight="semibold">European Parliamentary Visualizer</Text>
           </Box>
           <ViewToggle width={`${overlayBadgeWidth}px`} />
+          <DataLensToggle width={`${overlayBadgeWidth}px`} />
           <HStack align="flex-start" spacing={3}>
             <Box
               bg="white"
@@ -423,20 +446,44 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
                 <Box as="span" aria-hidden="true" width="10px" height="10px" display="inline-block" transform={legendOpen? 'rotate(90deg)' : 'rotate(0deg)'} transition="transform 120ms ease">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l8 7-8 7z"/></svg>
                 </Box>
-                <Text fontWeight="semibold" fontSize="sm">Political Alignment Legend</Text>
+                <Text fontWeight="semibold" fontSize="sm">{legendTitle}</Text>
               </HStack>
               {legendOpen && (
-                <VStack align="start" spacing={1}>
-                  {LEGEND_DETAILS.map(item => (
-                    <HStack key={item.label} spacing={2}>
-                      <Box width="12px" height="12px" borderRadius="2px" bg={item.color} border="1px solid black" />
-                      <Text fontSize="sm">{item.label}</Text>
-                    </HStack>
-                  ))}
+                <VStack align="start" spacing={2}>
+                  {dataView === 'gender' ? (
+                    <>
+                      <VStack align="center" spacing={1} width="100%">
+                        <HStack justify="space-between" width="220px" maxW="100%" px={1}>
+                          <Text fontSize="xs" color="gray.900">0% women</Text>
+                          <Text fontSize="xs" color="gray.900">50% women</Text>
+                        </HStack>
+                        <Box width="220px" maxW="100%" height="14px" borderRadius="8px" border="1px solid black" overflow="hidden" bg={genderGradientStops.start}>
+                          <Box width="100%" height="100%" background={`linear-gradient(90deg, ${genderGradientStops.start} 0%, ${genderGradientStops.end} 100%)`} />
+                        </Box>
+                      </VStack>
+                      {GENDER_STATIC_ITEMS.map((item: LegendDetail) => (
+                        <HStack key={item.label} spacing={2}>
+                          <Box width="12px" height="12px" borderRadius="2px" bg={item.color} border="1px solid black" />
+                          <Text fontSize="sm">{item.label}</Text>
+                        </HStack>
+                      ))}
+                    </>
+                  ) : (
+                    legendItems.map((item: LegendDetail) => (
+                      <HStack key={item.label} spacing={2}>
+                        <Box width="12px" height="12px" borderRadius="2px" bg={item.color} border="1px solid black" />
+                        <Text fontSize="sm">{item.label}</Text>
+                      </HStack>
+                    ))
+                  )}
                 </VStack>
               )}
             </Box>
-            <LegendInfoPopover />
+            <LegendInfoPopover
+              items={legendItems}
+              title={legendTitle}
+              gradient={dataView === 'gender' ? { start: genderGradientStops.start, end: genderGradientStops.end } : undefined}
+            />
           </HStack>
         </Box>
         {/* Timeline overlay (respect right offset when a panel is open) */}
@@ -518,7 +565,7 @@ function clamp(v:number, min:number, max:number){
   return Math.max(min, Math.min(max, v));
 }
 
-function LegendInfoPopover() {
+function LegendInfoPopover({ items, title, gradient }: { items: LegendDetail[]; title: string; gradient?: { start: string; end: string } }) {
   const stopPropagation = (event: SyntheticEvent) => event.stopPropagation();
 
   return (
@@ -526,7 +573,7 @@ function LegendInfoPopover() {
       <Popover placement="right-start" trigger="click">
         <PopoverTrigger>
           <IconButton
-            aria-label="Political alignment legend info"
+            aria-label={`${title} info`}
             icon={<FaInfoCircle />}
             size="xs"
             variant="ghost"
@@ -549,13 +596,27 @@ function LegendInfoPopover() {
               justifyContent="space-between"
             >
               <Text fontWeight="semibold" fontSize="sm" color="gray.700">
-                Political alignment guide
+                {title}
               </Text>
               <PopoverCloseButton position="static" transform="none" borderRadius="999px" size="sm" />
             </Box>
             <Box px={4} py={3} maxH="320px" overflowY="auto">
               <VStack align="stretch" spacing={3}>
-                {LEGEND_DETAILS.map(detail => (
+                {gradient && (
+                  <Box>
+                    <Text fontWeight="semibold" fontSize="sm" mb={2}>Female Parliamentary Representation</Text>
+                    <VStack align="center" spacing={1}>
+                      <HStack justify="space-between" width="220px" maxW="100%" px={1}>
+                        <Text fontSize="xs" color="gray.900">0% women</Text>
+                        <Text fontSize="xs" color="gray.900">50% women</Text>
+                      </HStack>
+                      <Box width="220px" maxW="100%" height="14px" borderRadius="8px" border="1px solid black" overflow="hidden" bg={gradient.start}>
+                        <Box width="100%" height="100%" background={`linear-gradient(90deg, ${gradient.start} 0%, ${gradient.end} 100%)`} />
+                      </Box>
+                    </VStack>
+                  </Box>
+                )}
+                {items.map((detail: LegendDetail) => (
                   <HStack key={detail.label} align="flex-start" spacing={3}>
                     <Box
                       width="14px"

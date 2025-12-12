@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useData } from './DataContext';
 import { majoritySocialCategory } from '@/lib/analytics';
 import { categoryPalette } from '@/lib/colors';
+import { getGenderColor, getGenderYearDataForCountry } from '@/lib/gender';
 
 export const TIMELINE_MIN_YEAR = 1950;
 export const TIMELINE_MAX_YEAR = 2025;
@@ -32,13 +33,17 @@ type TimelineProps = {
 const DEFAULT_TICK_HEIGHTS: TickHeightConfig = { decade: 9, year: 6 };
 
 export default function Timeline({ year, onChange, minTickYear, showElectionPins = true, borderless = false, tickHeights = DEFAULT_TICK_HEIGHTS }: TimelineProps) {
-  const { allData, country } = useData();
+  const { allData, genderData, country, dataView } = useData();
   const electionYears = useMemo(()=>{
     if (!country) return [] as number[];
+    if (dataView === 'gender') {
+      const years = (genderData[country] || []).map(d=>d.year);
+      return [...new Set(years)].filter((y)=> y >= TIMELINE_MIN_YEAR && y <= TIMELINE_MAX_YEAR).sort((a,b)=>a-b);
+    }
     const years = (allData[country] || []).map(d=>d.year);
     // Remove duplicates (e.g., Ireland 1982 has two elections)
     return [...new Set(years)].filter((y)=> y >= TIMELINE_MIN_YEAR && y <= TIMELINE_MAX_YEAR);
-  },[allData, country]);
+  },[allData, genderData, country, dataView]);
   const activeElectionYears = showElectionPins ? electionYears : [];
   const clampedMinTickYear = useMemo(()=>{
     if (typeof minTickYear !== 'number') return TIMELINE_MIN_YEAR;
@@ -52,18 +57,30 @@ export default function Timeline({ year, onChange, minTickYear, showElectionPins
   const tickData = useMemo(()=>{
     if (!country) return new Map<number, { color: string; partyName?: string; percentage?: number; collection?: 'Left'|'Centre'|'Right' }>();
     const m = new Map<number, { color: string; partyName?: string; percentage?: number; collection?: 'Left'|'Centre'|'Right' }>();
-    for (const y of activeElectionYears) {
-      const maj = majoritySocialCategory(allData, country, y);
-      const color = maj.category ? categoryPalette[maj.category] || '#666' : '#666';
-      m.set(y, { 
-        color, 
-        partyName: maj.partyName, 
-        percentage: maj.percentage,
-        collection: (maj as any).collection
-      });
+    if (dataView === 'gender') {
+      for (const y of activeElectionYears) {
+        const entry = getGenderYearDataForCountry(genderData, country, y);
+        if (!entry) continue;
+        m.set(y, {
+          color: getGenderColor(entry.femalePct),
+          partyName: 'Women',
+          percentage: entry.femalePct
+        });
+      }
+    } else {
+      for (const y of activeElectionYears) {
+        const maj = majoritySocialCategory(allData, country, y);
+        const color = maj.category ? categoryPalette[maj.category] || '#666' : '#666';
+        m.set(y, { 
+          color, 
+          partyName: maj.partyName, 
+          percentage: maj.percentage,
+          collection: (maj as any).collection
+        });
+      }
     }
     return m;
-  },[allData, country, activeElectionYears]);
+  },[allData, genderData, country, activeElectionYears, dataView]);
 
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
   useEffect(()=>{

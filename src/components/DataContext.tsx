@@ -1,18 +1,22 @@
 "use client";
 import { Dispatch, SetStateAction, createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { CountryKey, YearData } from '@/types';
+import { CountryKey, DataView, GenderYearData, YearData } from '@/types';
 
 type DataContextValue = {
   allData: Record<CountryKey, YearData[]>;
+  genderData: Record<CountryKey, GenderYearData[]>;
   country?: CountryKey;
   setCountry: (c?: CountryKey)=>void;
   year: number;
   setYear: (y:number)=>void;
   currentYearData?: YearData;
+  currentGenderData?: GenderYearData;
   comparisonSelections: (CountryKey | null)[];
   setComparisonSelections: Dispatch<SetStateAction<(CountryKey | null)[]>>;
   populations: Partial<Record<CountryKey, number>>;
+  dataView: DataView;
+  setDataView: (mode: DataView)=>void;
 };
 
 const DataContext = createContext<DataContextValue | undefined>(undefined);
@@ -23,12 +27,14 @@ const createEmptyComparisonSelections = () => Array.from({ length: DEFAULT_COMPA
 type DataProviderProps = {
   children: React.ReactNode;
   allData: Record<CountryKey, YearData[]>;
+  genderData: Record<CountryKey, GenderYearData[]>;
   populations: Partial<Record<CountryKey, number>>;
 };
 
-export function DataProvider({ children, allData, populations }: DataProviderProps) {
+export function DataProvider({ children, allData, genderData, populations }: DataProviderProps) {
   const [country,setCountry] = useState<CountryKey | undefined>();
   const [yearState,setYearState] = useState<number>(2018);
+  const [dataView, setDataViewState] = useState<DataView>('political');
   const [comparisonSelections, setComparisonSelections] = useState<(CountryKey | null)[]>(() => createEmptyComparisonSelections());
   const router = useRouter();
   const params = useSearchParams();
@@ -38,8 +44,10 @@ export function DataProvider({ children, allData, populations }: DataProviderPro
   useEffect(()=>{
     const c = params.get('country') as CountryKey | null;
     const y = params.get('year');
+    const lens = params.get('lens');
     if (c && allData[c]) setCountry(c);
     if (y) setYearState(Number(y));
+    if (lens === 'gender' || lens === 'political') setDataViewState(lens as DataView);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
@@ -48,11 +56,13 @@ export function DataProvider({ children, allData, populations }: DataProviderPro
     const query = new URLSearchParams();
     if (country) query.set('country', country);
     query.set('year', String(yearState));
+    if (dataView !== 'political') query.set('lens', dataView);
     const targetPath = pathname || '/';
     router.replace(`${targetPath}?${query.toString()}`);
-  },[country, yearState, router, pathname]);
+  },[country, yearState, dataView, router, pathname]);
 
   const setYear = (y:number) => setYearState(y);
+  const setDataView = (mode: DataView) => setDataViewState(mode);
   const currentYearData = useMemo(()=>{
     if (!country) return undefined;
     const arr = allData[country];
@@ -62,18 +72,32 @@ export function DataProvider({ children, allData, populations }: DataProviderPro
     const prev = [...arr].reverse().find(d=>d.year <= yearState);
     return prev ?? arr[0];
   },[allData,country,yearState]);
+
+  const currentGenderData = useMemo(()=>{
+    if (!country) return undefined;
+    const arr = genderData[country];
+    if (!arr || arr.length === 0) return undefined;
+    const exact = arr.find(d=>d.year===yearState);
+    if (exact) return exact;
+    const prev = [...arr].reverse().find(d=>d.year <= yearState);
+    return prev ?? arr[0];
+  },[genderData, country, yearState]);
   return (
     <DataContext.Provider
       value={{
         allData,
+        genderData,
         country,
         setCountry: (c?: CountryKey) => setCountry(c),
         year: yearState,
         setYear,
         currentYearData,
+        currentGenderData,
         comparisonSelections,
         setComparisonSelections,
-        populations
+        populations,
+        dataView,
+        setDataView
       }}
     >
       {children}
