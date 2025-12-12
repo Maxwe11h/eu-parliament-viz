@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import MapEurope from '@/components/MapEurope';
 import CountryPanel from '@/components/CountryPanel';
 import { CountryKey, YearData } from '@/types';
@@ -7,6 +7,7 @@ import { useData } from '@/components/DataContext';
 
 export default function Page() {
   const { country, setCountry, year, setYear, currentYearData, currentGenderData } = useData();
+  const [alternateOpen, setAlternateOpen] = useState(false);
   const handleSelect = (c: CountryKey) => {
     // Toggle selection: clicking the active country deselects it
     if (country && c === country) {
@@ -30,7 +31,14 @@ export default function Page() {
     <div style={{display:'flex',flexDirection:'column',height:'100vh', overflow:'hidden'}}>
       <div style={{flex:1, position:'relative', minHeight:0, overflow:'hidden', display:'flex'}}>
   <div style={{flex:1, minWidth:0, display:'flex', flexDirection:'column', minHeight:0, borderLeft:'2px solid black'}}>
-          <MapEurope selected={country} onSelect={handleSelect} year={year} onYearChange={setYear} timelineRightOffset={country ? 'min(32vw, 520px)' : 0} />
+          <MapEurope
+              selected={country}
+              onSelect={handleSelect}
+              year={year}
+              onYearChange={setYear}
+              timelineRightOffset={country ? (alternateOpen ? 'calc(min(30vw, 400px) + 380px)' : 'min(30vw, 400px)') : 0}
+              mapLeftShift={alternateOpen ? 290 : 0}
+            />
         </div>
         {/* Backdrop removed per user request */}
         {/* Slide-out overlay panel */}
@@ -40,9 +48,9 @@ export default function Page() {
             top: 0,
             bottom: 0,
             right: 0,
-            width: 'min(32vw, 520px)',
-            maxWidth: '520px',
-            minWidth: '320px',
+            width: 'min(30vw, 400px)',
+            maxWidth: '400px',
+            minWidth: '280px',
             transform: country ? 'translateX(0)' : 'translateX(100%)',
             transition: 'transform 320ms ease',
             zIndex: 40,
@@ -52,7 +60,12 @@ export default function Page() {
           aria-hidden={!country}
         >
           <div style={{flex:1, background:'white', borderLeft:'2px solid black', borderRight:'4px solid black', borderTop:'4px solid black', borderBottom:'4px solid black', boxShadow:'-8px 0 24px rgba(0,0,0,0.25)', display:'flex'}}>
-            <CountryPanel country={country} data={currentYearData} genderData={currentGenderData} />
+            <CountryPanel
+              country={country}
+              data={currentYearData}
+              genderData={currentGenderData}
+              onAlternateToggle={setAlternateOpen}
+            />
           </div>
         </div>
       </div>

@@ -128,11 +128,12 @@ europeanAlpha2.delete('RU');
 
 const WIDTH = 1200; const HEIGHT = 700; // logical viewport
 
-export default function MapEurope({ selected, onSelect, year, onYearChange, timelineRightOffset }: { selected?: CountryKey; onSelect: (c: CountryKey)=>void; year: number; onYearChange: (y:number)=>void; timelineRightOffset?: string | number }) {
+export default function MapEurope({ selected, onSelect, year, onYearChange, timelineRightOffset, mapLeftShift = 0 }: { selected?: CountryKey; onSelect: (c: CountryKey)=>void; year: number; onYearChange: (y:number)=>void; timelineRightOffset?: string | number; mapLeftShift?: number }) {
   const ref = useRef<SVGSVGElement>(null);
   const BASE_SCALE = 1;
   const [scale,setScale]=useState<number>(BASE_SCALE);
   const [tx,setTx]=useState<number>(0); const [ty,setTy]=useState<number>(0);
+  const mapGroupRef = useRef<SVGGElement|null>(null);
   const dragging = useRef<{x:number;y:number}|null>(null);
   const [hoverName,setHoverName]=useState<string|null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -248,7 +249,8 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
       .attr('fill','#FFFFFF')
       .style('pointer-events','none');
 
-    const g = svg.append('g').attr('transform',`translate(${tx},${ty}) scale(${scale})`);
+    const g = svg.append('g').attr('transform',`translate(${tx - mapLeftShift},${ty}) scale(${scale})`);
+    mapGroupRef.current = g.node();
   // Slightly closer base zoom (increase scale) and slight northward shift for better Europe centering
   // Shift projection slightly right and down by adjusting translate
   // Restore fixed projection (zoom handled via <g> transform)
@@ -396,6 +398,16 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
     svg.on('mouseleave', ()=>{ dragging.current = null; });
   },[countries, selected, scale, tx, ty, loading, error, year, allData, genderData, dataView]);
 
+  // Smoothly adjust map position when left shift changes without redrawing paths
+  useEffect(()=>{
+    if (!mapGroupRef.current) return;
+    d3.select(mapGroupRef.current)
+      .transition()
+      .duration(260)
+      .ease(d3.easeCubicOut as any)
+      .attr('transform',`translate(${tx - mapLeftShift},${ty}) scale(${scale})`);
+  },[mapLeftShift, tx, ty, scale]);
+
   const overlayBadgeWidth = 320;
   const legendItems = dataView === 'gender' ? GENDER_STATIC_ITEMS : POLITICAL_LEGEND_DETAILS;
   const legendTitle = dataView === 'gender' ? 'Gender Representation Legend' : 'Political Alignment Legend';
@@ -487,7 +499,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
           </HStack>
         </Box>
         {/* Timeline overlay (respect right offset when a panel is open) */}
-        <Box position="absolute" left={0} right={timelineRightOffset ?? 0} bottom={0} px={4} pb={3} display="flex" justifyContent="center" zIndex={20} pointerEvents="auto" overflow="visible" style={{ transition: 'right 220ms ease-out' }}>
+        <Box position="absolute" left={0} right={timelineRightOffset ?? 0} bottom={0} pl={4} pr={8} pb={3} display="flex" justifyContent="center" zIndex={20} pointerEvents="auto" overflow="visible" style={{ transition: 'right 220ms ease-out' }}>
           <Box maxW="980px" width="100%" display="flex" alignItems="center" gap={2}>
             {/* Inline year label */}
             <Box
