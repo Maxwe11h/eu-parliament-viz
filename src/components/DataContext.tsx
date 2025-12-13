@@ -39,7 +39,7 @@ export function DataProvider({ children, allData, genderData, populations }: Dat
   const [country,setCountry] = useState<CountryKey | undefined>();
   const [yearState,setYearState] = useState<number>(2018);
   const [dataView, setDataViewState] = useState<DataView>('political');
-  const [paletteOrientation, setPaletteOrientationState] = useState<PaletteOrientation>('american');
+  const [paletteOrientation, setPaletteOrientationState] = useState<PaletteOrientation>('european');
   const [comparisonSelections, setComparisonSelections] = useState<(CountryKey | null)[]>(() => createEmptyComparisonSelections());
   const router = useRouter();
   const params = useSearchParams();
@@ -64,7 +64,7 @@ export function DataProvider({ children, allData, genderData, populations }: Dat
     if (country) query.set('country', country);
     query.set('year', String(yearState));
     if (dataView !== 'political') query.set('lens', dataView);
-    if (paletteOrientation !== 'american') query.set('palette', paletteOrientation);
+    if (paletteOrientation !== 'european') query.set('palette', paletteOrientation);
     const targetPath = pathname || '/';
     router.replace(`${targetPath}?${query.toString()}`);
   },[country, yearState, dataView, paletteOrientation, router, pathname]);
