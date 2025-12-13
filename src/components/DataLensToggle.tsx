@@ -9,9 +9,11 @@ const TOGGLE_PADDING = 4;
 
 type DataLensToggleProps = {
   width?: string | number;
+  borderless?: boolean;
+  compact?: boolean;
 };
 
-export default function DataLensToggle({ width = 320 }: DataLensToggleProps) {
+export default function DataLensToggle({ width = 320, borderless = false, compact = false }: DataLensToggleProps) {
   const { dataView, setDataView } = useData();
 
   const renderButton = (label: string, view: DataView) => {
@@ -26,7 +28,7 @@ export default function DataLensToggle({ width = 320 }: DataLensToggleProps) {
         color={isActive ? 'white' : 'black'}
         fontWeight="semibold"
         fontSize="sm"
-        height="36px"
+        height={compact ? '30px' : '36px'}
         borderRadius={`${TOGGLE_RADIUS}px`}
         border="1px solid"
         borderColor={isActive ? 'black' : 'gray.300'}
@@ -45,9 +47,9 @@ export default function DataLensToggle({ width = 320 }: DataLensToggleProps) {
       <Box
         display="inline-flex"
         width="100%"
-        border="2px solid black"
+        border={borderless ? 'none' : '2px solid black'}
         borderRadius={`${TOGGLE_RADIUS}px`}
-        boxShadow="sm"
+        boxShadow={borderless ? 'none' : 'sm'}
         bg="white"
         padding={`${TOGGLE_PADDING}px`}
         gap={`${TOGGLE_PADDING}px`}

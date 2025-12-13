@@ -28,7 +28,6 @@ import type { GenderYearData } from '@/types';
 import { useData } from './DataContext';
 import ViewToggle from './ViewToggle';
 import { getCountryLabel, orderedCountryKeys } from '@/lib/countryMeta';
-import { categoryPalette } from '@/lib/colors';
 import { getYearDataForCountry, majoritySocialCategory } from '@/lib/analytics';
 import { getGenderYearDataForCountry } from '@/lib/gender';
 import ElectionDonut from './ElectionDonut';
@@ -37,11 +36,12 @@ import LeaningBarChart from './LeaningBarChart';
 import PartyTable from './PartyTable';
 import EuropeanComparison from './EuropeanComparison';
 import Timeline, { TIMELINE_MAX_YEAR, TIMELINE_MIN_YEAR } from './Timeline';
+import DataLensToggle from './DataLensToggle';
 
 const COLUMN_COUNT = 3;
 
 export default function ComparisonView() {
-  const { allData, genderData, year, setYear, comparisonSelections, setComparisonSelections, populations } = useData();
+  const { allData, genderData, year, setYear, comparisonSelections, setComparisonSelections, populations, paletteOrientation, setPaletteOrientation } = useData();
   const [yearQuery, setYearQuery] = useState(year.toString());
 
   useEffect(()=>{
@@ -154,76 +154,75 @@ export default function ComparisonView() {
 
   return (
     <Box display="flex" flexDirection="column" height="100vh" bg="gray.50">
-      <Box px={{ base: 4, md: 6 }} py={{ base: 1, md: 2 }} borderBottom="2px solid" borderColor="black" bg="white" boxShadow="md">
-        <Flex align={{ base: 'flex-start', md: 'center' }} justify="space-between" gap={3} flexWrap="wrap">
-          <Box>
-            <Heading as="h1" size="md" lineHeight="1.2" textAlign="center">European Parliamentary Visualizer</Heading>
-          </Box>
-          <Flex gap={2} flexWrap="wrap" justify="flex-end">
-            <ViewToggle width={240} borderless />
-          </Flex>
-        </Flex>
-        <Box mt={-2}>
-          <Flex align="center" gap={0} flexWrap="wrap">
-            <Box
-              bg="transparent"
-              color="black"
-              border="none"
-              borderRadius="0"
-              boxShadow="none"
-              px={4}
-              py={2}
-              height="54px"
-              display="flex"
-              flexDirection="column"
-              justifyContent="center"
-              alignItems="center"
-              minW="150px"
-            >
-              <InputGroup size="md" width="auto" display="flex" alignItems="center" justifyContent="center" mb={0}>
-                <InputLeftElement pointerEvents="none" height="100%" color="gray.500" top="50%" transform="translateY(-50%)" width="18px" left="2px" display="flex" justifyContent="center">
-                  <Box as="span" display="inline-flex" aria-hidden="true">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="11" cy="11" r="7" />
-                      <line x1="17" y1="17" x2="21" y2="21" />
-                    </svg>
-                  </Box>
-                </InputLeftElement>
-                <Input
-                  type="number"
-                  variant="unstyled"
-                  fontWeight="extrabold"
-                  fontSize="lg"
-                  letterSpacing="-0.02em"
-                  value={yearQuery}
-                  onChange={(event)=>setYearQuery(event.target.value)}
-                  onKeyDown={handleYearInputKeyDown}
-                  onBlur={handleYearInputBlur}
-                  min={TIMELINE_MIN_YEAR}
-                  max={TIMELINE_MAX_YEAR}
-                  step={1}
-                  inputMode="numeric"
-                  aria-label="Search year"
-                  paddingLeft="22px"
-                  width="88px"
-                  height="32px"
-                  color="black"
-                  _placeholder={{ color: 'gray.400' }}
+      <Box px={{ base: 4, md: 6 }} py={{ base: 2, md: 3 }} borderBottom="2px solid" borderColor="black" bg="white" boxShadow="md">
+        <Flex align="stretch" justify="space-between" gap={4} flexWrap="wrap">
+          <Box display="flex" flexDirection="column" gap={2} flex={1} minW="260px">
+            <Heading as="h1" size="md" lineHeight="1.2">European Parliamentary Visualizer</Heading>
+            <Flex align="center" gap={3} flexWrap="wrap">
+              <Box
+                bg="transparent"
+                color="black"
+                border="none"
+                borderRadius="0"
+                boxShadow="none"
+                px={2}
+                py={1}
+                height="54px"
+                display="flex"
+                flexDirection="column"
+                justifyContent="center"
+                alignItems="center"
+                minW="150px"
+              >
+                <InputGroup size="md" width="auto" display="flex" alignItems="center" justifyContent="center" mb={0}>
+                  <InputLeftElement pointerEvents="none" height="100%" color="gray.500" top="50%" transform="translateY(-50%)" width="18px" left="2px" display="flex" justifyContent="center">
+                    <Box as="span" display="inline-flex" aria-hidden="true">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="7" />
+                        <line x1="17" y1="17" x2="21" y2="21" />
+                      </svg>
+                    </Box>
+                  </InputLeftElement>
+                  <Input
+                    type="number"
+                    variant="unstyled"
+                    fontWeight="extrabold"
+                    fontSize="lg"
+                    letterSpacing="-0.02em"
+                    value={yearQuery}
+                    onChange={(event)=>setYearQuery(event.target.value)}
+                    onKeyDown={handleYearInputKeyDown}
+                    onBlur={handleYearInputBlur}
+                    min={TIMELINE_MIN_YEAR}
+                    max={TIMELINE_MAX_YEAR}
+                    step={1}
+                    inputMode="numeric"
+                    aria-label="Search year"
+                    paddingLeft="22px"
+                    width="88px"
+                    height="32px"
+                    color="black"
+                    _placeholder={{ color: 'gray.400' }}
+                  />
+                </InputGroup>
+                <Text fontSize="xs" color="gray.600" lineHeight="1" mt={0}>Selected Year</Text>
+              </Box>
+              <Box flex={1} minW={0} width="100%">
+                <Timeline
+                  year={year}
+                  onChange={setYear}
+                  showElectionPins={false}
+                  borderless
+                  tickHeights={{ decade: 12, year: 9 }}
                 />
-              </InputGroup>
-              <Text fontSize="xs" color="gray.600" lineHeight="1" mt={0}>Selected Year</Text>
-            </Box>
-            <Box flex={1} minW={0} width="100%">
-              <Timeline
-                year={year}
-                onChange={setYear}
-                showElectionPins={false}
-                borderless
-                tickHeights={{ decade: 12, year: 9 }}
-              />
-            </Box>
-          </Flex>
-        </Box>
+              </Box>
+            </Flex>
+          </Box>
+          <Box display="flex" flexDirection="column" gap={2} alignItems="flex-end" minW="200px">
+            <ViewToggle width={200} borderless height={30} />
+            <DataLensToggle width={200} borderless compact />
+          </Box>
+        </Flex>
       </Box>
 
       <Box flex="1" overflowY="auto">
@@ -400,6 +399,7 @@ type CountryInsightsProps = {
 };
 
 function CountryInsights({ country, data, genderData, year, allData, onClear }: CountryInsightsProps) {
+  const { categoryPalette } = useData();
   const label = getCountryLabel(country);
   const majority = majoritySocialCategory(allData, country, year);
   const activeParties = data.parties.filter(p => (p.votes ?? 0) > 0).length;

@@ -1,9 +1,10 @@
 "use client";
 import { HStack, VStack, Text, Box } from '@chakra-ui/react';
-import { categoryPalette } from '@/lib/colors';
 import { YearData } from '@/types';
+import { useData } from './DataContext';
 
 export default function Legend({ data }: { data?: YearData }) {
+  const { categoryPalette } = useData();
   const discrepancy = data ? data.total - data.sumParties : 0;
   return (
     <VStack align="start" spacing={2} fontSize="xs">

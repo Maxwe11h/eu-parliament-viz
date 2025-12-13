@@ -8,6 +8,8 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  Button,
+  ButtonGroup,
   IconButton,
   Popover,
   PopoverTrigger,
@@ -16,7 +18,7 @@ import {
   PopoverCloseButton
 } from '@chakra-ui/react';
 import * as d3 from 'd3';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, SyntheticEvent } from 'react';
 import * as topojson from 'topojson-client';
 // world-countries provides metadata to determine European countries
@@ -27,7 +29,6 @@ import { CountryKey } from '@/types';
 import Timeline, { TIMELINE_MAX_YEAR, TIMELINE_MIN_YEAR } from './Timeline';
 import { useData } from './DataContext';
 import { majoritySocialCategory } from '@/lib/analytics';
-import { categoryPalette } from '@/lib/colors';
 import { getCountryFreedomYear, isCountryFree, NOT_FREE_COLOR } from '@/lib/democracy';
 import { formatFemaleShare, getGenderColor, getGenderYearDataForCountry, genderGradientStops } from '@/lib/gender';
 import { FaInfoCircle } from 'react-icons/fa';
@@ -38,40 +39,40 @@ type LegendDetail = {
   description: string;
 };
 
-const POLITICAL_LEGEND_DETAILS: LegendDetail[] = [
+const buildPoliticalLegend = (palette: Record<string,string>): LegendDetail[] => [
   {
     label: 'Far Left',
-    color: categoryPalette['Far Left'],
+    color: palette['Far Left'],
     description: 'Revolutionary or anti-capitalist factions that call for sweeping nationalizations, mass movements, and confrontational protest tactics to upend the market order.'
   },
   {
     label: 'Left',
-    color: categoryPalette['Left'],
+    color: palette['Left'],
     description: 'Mainstream social-democratic parties prioritizing progressive taxation, redistribution, powerful unions, and continually expanding public services while remaining pro-European.'
   },
   {
     label: 'Centre-Left',
-    color: categoryPalette['Centre-Left'],
+    color: palette['Centre-Left'],
     description: 'Moderate progressive blocs that keep market economies in place but pair them with climate investment, civil-liberties reforms, and carefully targeted regulation.'
   },
   {
     label: 'Centre',
-    color: categoryPalette['Centre'],
+    color: palette['Centre'],
     description: 'Pragmatic liberal or Christian-democratic coalitions balancing regulation with open markets, focusing on EU integration, rule of law, and incremental reforms over ideology.'
   },
   {
     label: 'Centre-Right',
-    color: categoryPalette['Centre-Right'],
+    color: palette['Centre-Right'],
     description: 'Moderate conservatives favoring fiscal restraint, subsidies for strategic industries, and gradual reform while defending long-standing institutions and cultural norms.'
   },
   {
     label: 'Right',
-    color: categoryPalette['Right'],
+    color: palette['Right'],
     description: 'National- or liberal-conservative parties emphasizing sovereignty, tougher policing, skepticism toward Brussels mandates, and broad-based tax cuts for firms and families.'
   },
   {
     label: 'Far Right',
-    color: categoryPalette['Far Right'],
+    color: palette['Far Right'],
     description: 'Populist ultra-nationalist movements that promote ethnocentric identity politics, sharp migration limits, and expansions of executive authority over courts or media.'
   },
   {
@@ -139,12 +140,13 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoverPos,setHoverPos]=useState<{x:number;y:number}|null>(null);
   // Access all data for coloring
-  const { allData, genderData, dataView } = useData();
+  const { allData, genderData, dataView, categoryPalette, paletteOrientation, setPaletteOrientation } = useData();
   const [legendOpen, setLegendOpen] = useState(true);
   // rAF throttling for tooltip position updates
   const rAF = useRef<number|null>(null);
   const pendingPos = useRef<{x:number;y:number}|null>(null);
   const selectedFreedomYear = selected ? getCountryFreedomYear(selected) : undefined;
+  const politicalLegendItems = useMemo(() => buildPoliticalLegend(categoryPalette), [categoryPalette]);
 
   type CountryFeature = any;
   const [countries, setCountries] = useState<CountryFeature[]>([]);
@@ -396,7 +398,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
       });
     svg.on('mouseup', ()=>{ dragging.current = null; });
     svg.on('mouseleave', ()=>{ dragging.current = null; });
-  },[countries, selected, scale, tx, ty, loading, error, year, allData, genderData, dataView]);
+  },[countries, selected, scale, tx, ty, loading, error, year, allData, genderData, dataView, categoryPalette]);
 
   // Smoothly adjust map position when left shift changes without redrawing paths
   useEffect(()=>{
@@ -409,7 +411,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
   },[mapLeftShift, tx, ty, scale]);
 
   const overlayBadgeWidth = 320;
-  const legendItems = dataView === 'gender' ? GENDER_STATIC_ITEMS : POLITICAL_LEGEND_DETAILS;
+  const legendItems = dataView === 'gender' ? GENDER_STATIC_ITEMS : politicalLegendItems;
   const legendTitle = dataView === 'gender' ? 'Gender Representation Legend' : 'Political Alignment Legend';
 
   return (
@@ -437,7 +439,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
           >
             <Text fontWeight="semibold">European Parliamentary Visualizer</Text>
           </Box>
-          <ViewToggle width={`${overlayBadgeWidth}px`} />
+          <ViewToggle width={`${overlayBadgeWidth}px`} height={38} />
           <DataLensToggle width={`${overlayBadgeWidth}px`} />
           <HStack align="flex-start" spacing={3}>
             <Box
@@ -462,6 +464,33 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
               </HStack>
               {legendOpen && (
                 <VStack align="start" spacing={2}>
+                  {dataView !== 'gender' && (
+                    <HStack
+                      spacing={2}
+                      align="center"
+                      onClick={(e)=>e.stopPropagation()}
+                      onMouseDown={(e)=>e.stopPropagation()}
+                      onPointerDown={(e)=>e.stopPropagation()}
+                    >
+                      <Text fontSize="xs" color="gray.700">Color convention</Text>
+                      <ButtonGroup size="xs" isAttached variant="outline">
+                        <Button
+                          variant={paletteOrientation === 'european' ? 'solid' : 'ghost'}
+                          colorScheme="gray"
+                          onClick={()=>setPaletteOrientation('european')}
+                        >
+                          European
+                        </Button>
+                        <Button
+                          variant={paletteOrientation === 'american' ? 'solid' : 'ghost'}
+                          colorScheme="gray"
+                          onClick={()=>setPaletteOrientation('american')}
+                        >
+                          American
+                        </Button>
+                      </ButtonGroup>
+                    </HStack>
+                  )}
                   {dataView === 'gender' ? (
                     <>
                       <VStack align="center" spacing={1} width="100%">

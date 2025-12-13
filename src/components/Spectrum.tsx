@@ -14,10 +14,12 @@ import * as d3 from 'd3';
 import { useEffect, useRef } from 'react';
 import { YearData } from '@/types';
 import { FaInfoCircle } from 'react-icons/fa';
+import { useData } from './DataContext';
 
 type PartyPoint = NonNullable<YearData>['parties'][number];
 
 export default function Spectrum({ data, size = 520 }: { data?: YearData; size?: number }){
+  const { categoryPalette } = useData();
   const ref = useRef<SVGSVGElement>(null);
   useEffect(()=>{
     const svg = d3.select(ref.current!);
@@ -73,7 +75,7 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
   const maxPct = d3.max(parties, (p:PartyPoint)=>p.pct) || 1;
     const r = d3.scaleSqrt().domain([0,maxPct]).range([minR,maxR]);
 
-  const circles = g.selectAll('circle.party')
+    const circles = g.selectAll('circle.party')
   .data(parties)
       .enter()
       .append('circle')
@@ -81,7 +83,7 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
   .attr('cx',(p:PartyPoint)=>x(p.econ ?? 0))
   .attr('cy',(p:PartyPoint)=>y(p.social ?? 0))
   .attr('r',(p:PartyPoint)=>r(p.pct))
-  .attr('fill',(p:PartyPoint)=>p.color)
+    .attr('fill',(p:PartyPoint)=> categoryPalette[p.socialCategory ?? ''] || p.color)
       .attr('fill-opacity',0.85)
       .attr('stroke','#111');
 
@@ -133,7 +135,7 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
     });
     // cleanup tooltip on unmount or data change
     return () => { try { tooltip.remove(); } catch {} };
-  },[data, size]);
+  },[data, size, categoryPalette]);
   return (
     <Box p={2} m={0}>
       <HStack align="flex-start" justify="space-between" px={3} spacing={3} mb={1}>

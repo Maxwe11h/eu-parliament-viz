@@ -4,7 +4,6 @@ import { useMemo, useRef, useState, useLayoutEffect, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useData } from './DataContext';
 import { majoritySocialCategory } from '@/lib/analytics';
-import { categoryPalette } from '@/lib/colors';
 import { getGenderColor, getGenderYearDataForCountry } from '@/lib/gender';
 
 export const TIMELINE_MIN_YEAR = 1950;
@@ -33,7 +32,7 @@ type TimelineProps = {
 const DEFAULT_TICK_HEIGHTS: TickHeightConfig = { decade: 9, year: 6 };
 
 export default function Timeline({ year, onChange, minTickYear, showElectionPins = true, borderless = false, tickHeights = DEFAULT_TICK_HEIGHTS }: TimelineProps) {
-  const { allData, genderData, country, dataView } = useData();
+  const { allData, genderData, country, dataView, categoryPalette } = useData();
   const electionYears = useMemo(()=>{
     if (!country) return [] as number[];
     if (dataView === 'gender') {
@@ -80,7 +79,7 @@ export default function Timeline({ year, onChange, minTickYear, showElectionPins
       }
     }
     return m;
-  },[allData, genderData, country, activeElectionYears, dataView]);
+  },[allData, genderData, country, activeElectionYears, dataView, categoryPalette]);
 
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
   useEffect(()=>{

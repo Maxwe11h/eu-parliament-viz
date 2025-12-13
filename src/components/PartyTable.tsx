@@ -1,8 +1,10 @@
 "use client";
 import { Box, Table, Thead, Tr, Th, Tbody, Td, Text } from '@chakra-ui/react';
 import { YearData } from '@/types';
+import { useData } from './DataContext';
 
 export default function PartyTable({ data, year, title = true }: { data?: YearData; year?: number; title?: boolean }){
+  const { categoryPalette } = useData();
   return (
     <Box p={0} m={0}>
       {title && (
@@ -25,7 +27,12 @@ export default function PartyTable({ data, year, title = true }: { data?: YearDa
               const name = p.englishName ?? p.acronym;
               const showAcronym = p.englishName && p.englishName !== p.acronym;
               return (
-                <Tr key={p.acronym} bg={p.color+"20"} borderBottom="1px solid" borderColor="gray.300">
+                <Tr
+                  key={p.acronym}
+                  bg={`${(categoryPalette[p.socialCategory ?? ''] || p.color || '#e2e8f0')}20`}
+                  borderBottom="1px solid"
+                  borderColor="gray.300"
+                >
                   <Td>
                     <Text fontWeight="medium" lineHeight="1.15">{name}</Text>
                     {showAcronym && (

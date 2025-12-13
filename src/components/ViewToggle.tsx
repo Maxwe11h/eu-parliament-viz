@@ -7,15 +7,18 @@ import { useMemo } from 'react';
 type ViewToggleProps = {
   width?: string | number;
   borderless?: boolean;
+  height?: string | number;
 };
 
 const TOGGLE_RADIUS = 18;
 const TOGGLE_PADDING = 4;
 
-export default function ViewToggle({ width = 320, borderless = false }: ViewToggleProps) {
+export default function ViewToggle({ width = 320, borderless = false, height = 30 }: ViewToggleProps) {
   const pathname = usePathname() || '/';
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const buttonHeight = typeof height === 'number' ? `${height}px` : height;
 
   const activeView = useMemo<'map' | 'comparison'>(() => {
     return pathname.startsWith('/comparison') ? 'comparison' : 'map';
@@ -45,7 +48,7 @@ export default function ViewToggle({ width = 320, borderless = false }: ViewTogg
         color={isActive ? 'white' : 'black'}
         fontWeight="semibold"
         fontSize="sm"
-        height="38px"
+        height={buttonHeight}
         borderRadius={`${TOGGLE_RADIUS}px`}
         border="1px solid"
         borderColor={isActive ? 'black' : 'gray.300'}

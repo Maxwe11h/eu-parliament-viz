@@ -1,11 +1,12 @@
 "use client";
 import { Box, HStack, Text } from '@chakra-ui/react';
 import * as d3 from 'd3';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { YearData } from '@/types';
-import { categoryPalette } from '@/lib/colors';
+import { useData } from './DataContext';
 
 export default function ElectionDonut({ data }: { data?: YearData }){
+  const { categoryPalette } = useData();
   const ref = useRef<SVGSVGElement>(null);
 
   const { socialSlices } = useMemo(()=>{
@@ -28,7 +29,7 @@ export default function ElectionDonut({ data }: { data?: YearData }){
       .sort((a,b)=> order.indexOf(a.key) - order.indexOf(b.key));
 
     return { socialSlices: bySocial } as const;
-  },[data]);
+  },[data, categoryPalette]);
 
   useEffect(()=>{
     const svg = d3.select(ref.current!);

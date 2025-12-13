@@ -8,7 +8,6 @@ import PartyTable from './PartyTable';
 import Spectrum from './Spectrum';
 import ElectionDonut from './ElectionDonut';
 import LeaningBarChart from './LeaningBarChart';
-import { categoryPalette } from '@/lib/colors';
 import { majoritySocialCategory } from '@/lib/analytics';
 import { getCountryFreedomYear } from '@/lib/democracy';
 import { getCountryLabel } from '@/lib/countryMeta';
@@ -22,7 +21,7 @@ type CountryPanelProps = {
 };
 
 export default function CountryPanel({ country, data, genderData, onAlternateToggle }: CountryPanelProps) {
-  const { year, allData, setCountry, dataView } = useData();
+  const { year, allData, setCountry, dataView, categoryPalette } = useData();
   const [showAlternatePanel, setShowAlternatePanel] = useState(false);
   const dataYear = data?.year;
   const freedomYear = country ? getCountryFreedomYear(country) : undefined;

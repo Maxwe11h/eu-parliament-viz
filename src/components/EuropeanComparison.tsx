@@ -16,6 +16,8 @@ import {
   Text,
   Th,
   Thead,
+  HStack,
+  VStack,
   Tooltip,
   Tr
 } from '@chakra-ui/react';
@@ -29,10 +31,10 @@ import {
   getCountryLabel,
   orderedCountryKeys
 } from '@/lib/countryMeta';
-import { categoryPalette } from '@/lib/colors';
 import { majoritySocialCategory } from '@/lib/analytics';
 import { getGenderColor, getGenderYearDataForCountry, genderGradientStops } from '@/lib/gender';
 import { FaInfoCircle } from 'react-icons/fa';
+import { useData } from './DataContext';
 
 const LEANING_SEGMENTS = ['Far Left', 'Left', 'Centre-Left', 'Centre', 'Centre-Right', 'Right', 'Far Right'] as const;
 type SegmentKey = (typeof LEANING_SEGMENTS)[number];
@@ -75,6 +77,7 @@ type GeometrySnapshot = {
 type PopulationRange = { min: number; max: number } | null;
 type PopulationRowInfo = { key: CountryKey; label: string; population: number };
 type PopulationTableData = { rows: PopulationRowInfo[] };
+type LegendItem = { segment: SegmentKey; color: string };
 
 const BUBBLE_MIN = 20;
 const BUBBLE_MAX = 60;
@@ -97,13 +100,14 @@ const FLAG_BACKGROUND_OVERRIDES: Partial<Record<CountryKey, { backgroundSize?: s
 };
 
 export default function EuropeanComparison({ allData, genderData, year, populations, onToggleCountry }: EuropeanComparisonProps) {
+  const { dataView, categoryPalette, paletteOrientation, setPaletteOrientation } = useData();
   const canvasRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | null>(null);
   const latestLayoutRef = useRef<BubbleWithPosition[]>([]);
   const handledSignatureRef = useRef<string>('');
   const [width, setWidth] = useState(0);
   const [layout, setLayout] = useState<BubbleWithPosition[]>([]);
-  const [lens, setLens] = useState<'political' | 'gender'>('political');
+  const lens: 'political' | 'gender' = dataView;
   const measuredWidth = width > 0 ? width : 0;
   const drawingWidth = measuredWidth > 0 ? Math.min(measuredWidth, VISUAL_MAX_WIDTH) : 0;
   const populationFormatter = useMemo(() => new Intl.NumberFormat('en-US'), []);
@@ -155,7 +159,7 @@ export default function EuropeanComparison({ allData, genderData, year, populati
         population: populations[key]
       };
     });
-  }, [allData, displayOrder, populations, year]);
+  }, [allData, displayOrder, populations, year, categoryPalette]);
 
   const genderEntries = useMemo(() => {
     return displayOrder
@@ -410,6 +414,10 @@ export default function EuropeanComparison({ allData, genderData, year, populati
   }, [targets, signature, centerX, centerY]);
 
   const genderChartHeight = 480;
+  const legendItems = LEANING_SEGMENTS.map(segment => ({
+    segment,
+    color: categoryPalette[segment] || '#1a202c'
+  }));
 
   return (
     <Box px={{ base: 2, md: 4 }} py={{ base: 4, md: 6 }} width="100%">
@@ -421,22 +429,14 @@ export default function EuropeanComparison({ allData, genderData, year, populati
               <Text fontSize="sm" color="gray.600">{headerSubtitle}</Text>
             </Box>
             <Flex gap={2} align="center">
-              <ButtonGroup size="sm" isAttached variant="outline">
-                <Button
-                  variant={lens === 'political' ? 'solid' : 'ghost'}
-                  colorScheme="gray"
-                  onClick={() => setLens('political')}
-                >
-                  Political
-                </Button>
-                <Button
-                  variant={lens === 'gender' ? 'solid' : 'ghost'}
-                  colorScheme="gray"
-                  onClick={() => setLens('gender')}
-                >
-                  Gender
-                </Button>
-              </ButtonGroup>
+              <Text fontSize="sm" color="gray.700" fontWeight="semibold">
+                {lens === 'gender' ? 'Gender view' : 'Political view'}
+              </Text>
+              <LegendPopover
+                items={legendItems}
+                paletteOrientation={paletteOrientation}
+                setPaletteOrientation={setPaletteOrientation}
+              />
               {hasPopulationTable && (
                 <PopulationReferencePopover rows={populationTable.rows} formatter={populationFormatter} />
               )}
@@ -752,6 +752,12 @@ function GenderBarComparison({ entries, width, containerWidth, populationRange, 
   );
 }
 
+type LegendPopoverProps = {
+  items: LegendItem[];
+  paletteOrientation: 'american' | 'european';
+  setPaletteOrientation: (o: 'american' | 'european') => void;
+};
+
 type PopulationReferencePopoverProps = {
   rows: PopulationRowInfo[];
   formatter: Intl.NumberFormat;
@@ -797,6 +803,71 @@ function PopulationReferencePopover({ rows, formatter }: PopulationReferencePopo
                 ))}
               </Tbody>
             </Table>
+          </Box>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function LegendPopover({ items, paletteOrientation, setPaletteOrientation }: LegendPopoverProps) {
+  return (
+    <Popover placement="bottom-end" trigger="click">
+      <PopoverTrigger>
+        <Button
+          size="sm"
+          variant="ghost"
+          border="1px solid"
+          borderColor="black"
+          borderRadius="999px"
+          leftIcon={<FaInfoCircle />}
+        >
+          Legend
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent border="2px solid" borderColor="black" borderRadius="24px" boxShadow="xl" maxW="320px">
+        <PopoverBody p={0}>
+          <Flex align="center" justify="space-between" px={4} pt={4} pb={2} borderBottom="1px solid" borderColor="gray.200">
+            <Text fontWeight="semibold" fontSize="sm" color="gray.700">
+              Political legend
+            </Text>
+            <PopoverCloseButton position="static" transform="none" borderRadius="999px" size="sm" />
+          </Flex>
+          <Box px={4} py={3}>
+            <HStack
+              spacing={2}
+              align="center"
+              mb={3}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <Text fontSize="xs" color="gray.700">Color convention</Text>
+              <ButtonGroup size="xs" isAttached variant="outline">
+                <Button
+                  variant={paletteOrientation === 'european' ? 'solid' : 'ghost'}
+                  colorScheme="gray"
+                  onClick={() => setPaletteOrientation('european')}
+                >
+                  European
+                </Button>
+                <Button
+                  variant={paletteOrientation === 'american' ? 'solid' : 'ghost'}
+                  colorScheme="gray"
+                  onClick={() => setPaletteOrientation('american')}
+                >
+                  American
+                </Button>
+              </ButtonGroup>
+            </HStack>
+            <VStack align="stretch" spacing={2}>
+              {items.map(item => (
+                <HStack key={item.segment} spacing={3} align="center">
+                  <Box width="14px" height="14px" borderRadius="3px" bg={item.color} border="1px solid black" />
+                  <Text fontWeight="semibold" fontSize="sm" color="gray.800">{item.segment}</Text>
+                </HStack>
+              ))}
+            </VStack>
           </Box>
         </PopoverBody>
       </PopoverContent>

@@ -2,8 +2,8 @@
 
 import { Box, Flex, Text } from '@chakra-ui/react';
 import { YearData } from '@/types';
-import { categoryPalette } from '@/lib/colors';
 import { getDetailedLeaningTotals } from '@/lib/analytics';
+import { useData } from './DataContext';
 
 const CHART_HEIGHT = 240;
 const ORDER: Array<'Far Left' | 'Left' | 'Centre-Left' | 'Centre' | 'Centre-Right' | 'Right' | 'Far Right'> = [
@@ -27,6 +27,7 @@ const ABBR: Record<(typeof ORDER)[number], string> = {
 const TICKS = [100, 75, 50, 25, 0];
 
 export default function LeaningBarChart({ data }: { data?: YearData }) {
+  const { categoryPalette } = useData();
   const distribution = getDetailedLeaningTotals(data);
   const hasData = distribution.some(segment => segment.votes > 0);
 
