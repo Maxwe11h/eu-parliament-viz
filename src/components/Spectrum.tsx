@@ -15,11 +15,12 @@ import { useEffect, useRef } from 'react';
 import { YearData } from '@/types';
 import { FaInfoCircle } from 'react-icons/fa';
 import { useData } from './DataContext';
+import { PaletteOrientation } from '@/lib/colors';
 
 type PartyPoint = NonNullable<YearData>['parties'][number];
 
 export default function Spectrum({ data, size = 520 }: { data?: YearData; size?: number }){
-  const { categoryPalette } = useData();
+  const { categoryPalette, paletteOrientation } = useData();
   const ref = useRef<SVGSVGElement>(null);
   useEffect(()=>{
     const svg = d3.select(ref.current!);
@@ -34,6 +35,8 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
   // X = economic (Left/Right), Y = social (Authoritarian/Libertarian)
   const x = d3.scaleLinear().domain([-10,10]).range([0, inner]);
   const y = d3.scaleLinear().domain([-10,10]).range([inner,0]);
+
+    const partyColor = (p: PartyPoint) => categoryPalette[p.socialCategory ?? ''] || p.color || '#999';
 
     // quadrant shading (top authoritarian red/blue; bottom libertarian green/purple)
     const quad = g.append('g');
@@ -75,17 +78,55 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
   const maxPct = d3.max(parties, (p:PartyPoint)=>p.pct) || 1;
     const r = d3.scaleSqrt().domain([0,maxPct]).range([minR,maxR]);
 
-    const circles = g.selectAll('circle.party')
-  .data(parties)
+    const sidesForEcon = (econ?: number) => {
+      if (!Number.isFinite(econ)) return 0; // unknown stays circle
+      const v = Math.max(-10, Math.min(10, econ as number));
+      const mag = Math.abs(v);
+      if (mag <= 1) return 0; // centre -> circle
+      if (mag <= 4) return 4; // centre-left / centre-right -> square
+      if (mag <= 7) return 5; // left / right -> pentagon
+      return 6; // far-left / far-right -> hexagon
+    };
+
+    const polygonPath = (sides: number, radius: number) => {
+      const path = d3.path();
+      const angleStep = (Math.PI * 2) / sides;
+      const start = -Math.PI / 2; // point up
+      path.moveTo(radius * Math.cos(start), radius * Math.sin(start));
+      for (let i = 1; i < sides; i++) {
+        const a = start + angleStep * i;
+        path.lineTo(radius * Math.cos(a), radius * Math.sin(a));
+      }
+      path.closePath();
+      return path.toString();
+    };
+
+    const shapes = g.selectAll('g.party')
+      .data(parties)
       .enter()
-      .append('circle')
+      .append('g')
       .attr('class','party')
-  .attr('cx',(p:PartyPoint)=>x(p.econ ?? 0))
-  .attr('cy',(p:PartyPoint)=>y(p.social ?? 0))
-  .attr('r',(p:PartyPoint)=>r(p.pct))
-    .attr('fill',(p:PartyPoint)=> categoryPalette[p.socialCategory ?? ''] || p.color)
-      .attr('fill-opacity',0.85)
-      .attr('stroke','#111');
+      .attr('transform', (p: PartyPoint) => `translate(${x(p.econ ?? 0)},${y(p.social ?? 0)})`);
+
+    shapes.each(function(p: PartyPoint){
+      const group = d3.select(this);
+      const sides = sidesForEcon(p.econ);
+      const radius = r(p.pct);
+      const fill = partyColor(p);
+      if (sides < 3) {
+        group.append('circle')
+          .attr('r', radius)
+          .attr('fill', fill)
+          .attr('fill-opacity', 0.85)
+          .attr('stroke', '#111');
+      } else {
+        group.append('path')
+          .attr('d', polygonPath(sides, radius))
+          .attr('fill', fill)
+          .attr('fill-opacity', 0.85)
+          .attr('stroke', '#111');
+      }
+    });
 
     // custom tooltip (timeline-style)
     const tooltip = d3.create('div')
@@ -109,14 +150,15 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
     // Append to body so fixed positioning uses viewport and avoids transformed ancestor issues
     document.body.appendChild(tooltip.node()!);
 
-    circles.on('mouseenter', function (event, d: PartyPoint){
+    shapes.on('mouseenter', function (event, d: PartyPoint){
       const header = d.englishName ?? d.acronym;
+      const fillColor = partyColor(d);
         const acronymLine = d.englishName && d.englishName !== d.acronym ? `<div style="color:#bbb;font-size:11px;">${d.acronym}</div>` : '';
         const sub = `${d.socialCategory ?? 'Uncategorized'} • ${d.pct.toFixed(1)}%`;
       tooltip.style('opacity','1').style('width','').html(`
         <div style="font-weight:700;color:#fff;text-overflow:ellipsis;overflow:hidden;max-width:100%">${header}</div>
           ${acronymLine}
-        <div style="color:${d.color};text-overflow:ellipsis;overflow:hidden;max-width:100%;margin-top:4px">${sub}</div>
+        <div style="color:${fillColor};text-overflow:ellipsis;overflow:hidden;max-width:100%;margin-top:4px">${sub}</div>
       `);
       // no width lock: each hover sizes independently
     }).on('mousemove', function(event){
@@ -145,14 +187,36 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
             X-axis displays social policy alignment and Y-axis displays economic policy alignment
           </Text>
         </Box>
-        <SpectrumInfoPopover />
+        <SpectrumInfoPopover palette={categoryPalette} paletteOrientation={paletteOrientation} />
       </HStack>
       <svg ref={ref} width="100%" viewBox={`0 0 ${size} ${size}`} />
     </Box>
   );
 }
 
-function SpectrumInfoPopover() {
+type SpectrumInfoProps = { palette: Record<string, string>; paletteOrientation: PaletteOrientation };
+
+function SpectrumInfoPopover({ palette, paletteOrientation }: SpectrumInfoProps) {
+  const colorLabels = ['Far Left', 'Left', 'Centre-Left', 'Centre', 'Centre-Right', 'Right', 'Far Right'];
+  const shapeLegend = [
+    { label: 'Centre', sides: 0 },
+    { label: 'Centre-Left/Right', sides: 4 },
+    { label: 'Left/Right', sides: 5 },
+    { label: 'Far Left/Right', sides: 6 }
+  ];
+
+  const shapeSvg = (sides: number) => {
+    if (sides < 3) return <circle cx="12" cy="12" r="9" fill="#4a5568" stroke="#111" strokeWidth="1" />;
+    const r = 9;
+    const points = Array.from({ length: sides }, (_, i) => {
+      const a = -Math.PI / 2 + (Math.PI * 2 * i) / sides;
+      const x = 12 + r * Math.cos(a);
+      const y = 12 + r * Math.sin(a);
+      return `${x},${y}`;
+    }).join(' ');
+    return <polygon points={points} fill="#4a5568" stroke="#111" strokeWidth="1" />;
+  };
+
   return (
     <Popover placement="left-start" trigger="click">
       <PopoverTrigger>
@@ -170,13 +234,35 @@ function SpectrumInfoPopover() {
       <PopoverContent border="2px solid" borderColor="black" borderRadius="20px" boxShadow="xl" maxW="340px">
         <PopoverCloseButton />
         <PopoverBody fontSize="sm" color="gray.700" lineHeight="1.4">
-          <Text fontWeight="semibold" mb={2} color="gray.800">Reading the spectrum</Text>
+          <Text fontWeight="semibold" color="gray.800">Reading the spectrum</Text>
           <Text>
             The horizontal axis plots parties from economic left (state intervention, redistribution) to economic right
             (market liberalism, deregulation). The vertical axis spans social policy, with authoritarian preferences at the
             top (law-and-order, central authority) and libertarian preferences at the bottom (individual freedoms, civil
             liberties). Circle size reflects share of the legislature in the selected election year.
           </Text>
+          <Text fontWeight="semibold" mt={2} color="gray.800">Colors</Text>
+          <Text mb={2}>
+            Colors correspond to each party&apos;s social idealogy leaning.
+          </Text>
+          <HStack spacing={2} mb={3} wrap="wrap">
+            {colorLabels.map(label => (
+              <HStack key={label} spacing={1} align="center">
+                <Box w="14px" h="14px" borderRadius="4px" border="1px solid #111" bg={palette[label] || '#e2e8f0'} />
+                <Text fontSize="xs" color="gray.700">{label}</Text>
+              </HStack>
+            ))}
+          </HStack>
+          <Text fontWeight="semibold" mt={2} color="gray.800">Glyphs</Text>
+          <Text mb={2}>Shape changes with economic ideology leaning.</Text>
+          <HStack spacing={3} wrap="wrap">
+            {shapeLegend.map(item => (
+              <HStack key={item.label} spacing={1} align="center">
+                <Box as="svg" width="24px" height="24px" viewBox="0 0 24 24">{shapeSvg(item.sides)}</Box>
+                <Text fontSize="xs" color="gray.700">{item.label}</Text>
+              </HStack>
+            ))}
+          </HStack>
         </PopoverBody>
       </PopoverContent>
     </Popover>

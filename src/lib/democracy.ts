@@ -9,7 +9,9 @@ export const freedomYearByCountry: Partial<Record<CountryKey, number>> = {
   'croatia': 1992, // multi-party elections held under Socialist Republic
   'estonia': 1992, // independence restored and free elections
   'latvia': 1993, // independence restored
-  'lithuania': 1990 // independence restored
+  'lithuania': 1990, // independence restored
+  'czech-republic': 1992, // post-Velvet Revolution parliamentary elections
+  'slovakia': 1992 // post-Velvet Revolution parliamentary elections
 };
 
 export const NOT_FREE_COLOR = '#555555';

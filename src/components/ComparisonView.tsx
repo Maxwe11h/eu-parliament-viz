@@ -4,13 +4,13 @@ import {
   Box,
   Button,
   Flex,
-  HStack,
   Heading,
   Input,
   InputGroup,
   InputLeftElement,
   InputRightElement,
   Table,
+  HStack,
   Thead,
   Tbody,
   Tr,
@@ -30,6 +30,7 @@ import ViewToggle from './ViewToggle';
 import { getCountryLabel, orderedCountryKeys } from '@/lib/countryMeta';
 import { getYearDataForCountry, majoritySocialCategory } from '@/lib/analytics';
 import { getGenderYearDataForCountry } from '@/lib/gender';
+import { getCountryFreedomYear } from '@/lib/democracy';
 import ElectionDonut from './ElectionDonut';
 import Spectrum from './Spectrum';
 import LeaningBarChart from './LeaningBarChart';
@@ -129,6 +130,10 @@ export default function ComparisonView() {
       next[index] = null;
       return next;
     });
+  };
+
+  const handleClearAll = () => {
+    setComparisonSelections(Array(COLUMN_COUNT).fill(null));
   };
 
   const handleToggleCountry = (country: CountryKey) => {
@@ -234,6 +239,26 @@ export default function ComparisonView() {
             populations={populations}
             onToggleCountry={handleToggleCountry}
           />
+        </Box>
+        <Box
+          px={{ base: 4, md: 6 }}
+          py={2}
+          border="2px solid"
+          borderColor="black"
+          borderRadius="18px"
+          bg="white"
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          mx={8}
+          mt={2}
+        >
+          <Box flex="1" textAlign="left">
+            <Text fontWeight="semibold" fontSize="lg" color="gray.800">Selectable Comparison</Text>
+          </Box>
+          <Button size="sm" variant="ghost" leftIcon={<FaTimes />} onClick={handleClearAll} color="gray.700" ml={2}>
+            Clear all
+          </Button>
         </Box>
         <Flex align="stretch" minH="100%" width="100%" px={{ base: 0, md: 4 }} py={0}>
           {columnConfigs.map((config, idx) => (
@@ -391,7 +416,7 @@ function CountryColumn({ country, data, genderData, year, options, allData, onSe
 
 type CountryInsightsProps = {
   country: CountryKey;
-  data: YearData;
+  data?: YearData;
   genderData: Record<CountryKey, GenderYearData[]>;
   year: number;
   allData: Record<CountryKey, YearData[]>;
@@ -401,9 +426,78 @@ type CountryInsightsProps = {
 function CountryInsights({ country, data, genderData, year, allData, onClear }: CountryInsightsProps) {
   const { categoryPalette } = useData();
   const label = getCountryLabel(country);
-  const majority = majoritySocialCategory(allData, country, year);
-  const activeParties = data.parties.filter(p => (p.votes ?? 0) > 0).length;
-  const genderEntry = getGenderYearDataForCountry(genderData, country, year);
+  const freedomYear = getCountryFreedomYear(country);
+  const blockedByDemocracy = !!(freedomYear && year < freedomYear);
+  const majority = !blockedByDemocracy && data ? majoritySocialCategory(allData, country, year) : { category: undefined, percentage: undefined };
+  const activeParties = data ? data.parties.filter(p => (p.votes ?? 0) > 0).length : 0;
+  const genderEntry = !blockedByDemocracy ? getGenderYearDataForCountry(genderData, country, year) : undefined;
+  const dataYear = data?.year ?? '—';
+  const totalSeats = data?.total?.toLocaleString();
+
+  if (blockedByDemocracy) {
+    return (
+      <Box
+        border="2px solid"
+        borderColor="black"
+        borderRadius="32px"
+        bg="white"
+        overflow="hidden"
+        display="flex"
+        flexDirection="column"
+        flex="1"
+      >
+        <Box borderBottom="2px solid" borderColor="black" px={6} py={5}>
+          <Flex justify="space-between" align={{ base: 'flex-start', md: 'center' }} gap={4} flexWrap="wrap">
+            <Box>
+              <Text fontWeight="bold" fontSize="lg">{label}</Text>
+              <Text fontSize="sm" color="gray.600">Most Recent Election: {dataYear}</Text>
+              {totalSeats && <Text fontSize="sm" color="gray.600">{totalSeats} seats</Text>}
+            </Box>
+            <Button size="sm" variant="ghost" leftIcon={<FaTimes />} onClick={onClear} color="gray.600">
+              Clear
+            </Button>
+          </Flex>
+        </Box>
+
+        <Box px={6} py={5}>
+          <Text fontSize="sm" color="gray.700">
+            {label} did not hold free parliamentary elections until <b>{freedomYear}</b>. Data visualizations are unavailable prior to that transition.
+          </Text>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Box
+        border="2px solid"
+        borderColor="black"
+        borderRadius="32px"
+        bg="white"
+        overflow="hidden"
+        display="flex"
+        flexDirection="column"
+        flex="1"
+      >
+        <Box borderBottom="2px solid" borderColor="black" px={6} py={5}>
+          <Flex justify="space-between" align={{ base: 'flex-start', md: 'center' }} gap={4} flexWrap="wrap">
+            <Box>
+              <Text fontWeight="bold" fontSize="lg">{label}</Text>
+              <Text fontSize="sm" color="gray.600">Most Recent Election: —</Text>
+            </Box>
+            <Button size="sm" variant="ghost" leftIcon={<FaTimes />} onClick={onClear} color="gray.600">
+              Clear
+            </Button>
+          </Flex>
+        </Box>
+
+        <Box px={6} py={5}>
+          <Text fontSize="sm" color="gray.700">No election data is available for {label} in {year}.</Text>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box

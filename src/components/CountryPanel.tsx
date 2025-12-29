@@ -78,7 +78,7 @@ export default function CountryPanel({ country, data, genderData, onAlternateTog
             <Box>
               <Text fontWeight="bold" fontSize="lg">{label}</Text>
               <Text fontSize="sm" color="gray.600">
-                {isGenderMode ? 'Latest gender data' : 'Most recent election'}: {isGenderMode ? (genderData?.year ?? '—') : (dataYear ?? '—')}
+                Last Election: {dataYear ?? '—'}
               </Text>
               {(isGenderMode ? genderData?.total : data?.total) && (
                 <Text fontSize="sm" color="gray.600">{(isGenderMode ? genderData?.total : data?.total)?.toLocaleString()} seats</Text>
@@ -92,7 +92,10 @@ export default function CountryPanel({ country, data, genderData, onAlternateTog
                 onClick={() => setShowAlternatePanel(!showAlternatePanel)}
                 w="full"
               >
-                {showAlternatePanel ? 'Hide other view' : 'Show other view'}
+                {showAlternatePanel 
+                  ? `Hide ${alternateView === 'gender' ? 'Gender' : 'Political'} Data` 
+                  : `Expand ${alternateView === 'gender' ? 'Gender' : 'Political'} Data`
+                }
               </Button>
               <Button size="sm" variant="ghost" leftIcon={<FaTimes />} onClick={handleClose} color="gray.600" w="full">
                 Close

@@ -32,6 +32,7 @@ import {
   orderedCountryKeys
 } from '@/lib/countryMeta';
 import { majoritySocialCategory } from '@/lib/analytics';
+import { getCountryFreedomYear } from '@/lib/democracy';
 import { getGenderColor, getGenderYearDataForCountry, genderGradientStops } from '@/lib/gender';
 import { FaInfoCircle } from 'react-icons/fa';
 import { useData } from './DataContext';
@@ -112,8 +113,8 @@ export default function EuropeanComparison({ allData, genderData, year, populati
   const drawingWidth = measuredWidth > 0 ? Math.min(measuredWidth, VISUAL_MAX_WIDTH) : 0;
   const populationFormatter = useMemo(() => new Intl.NumberFormat('en-US'), []);
   const headerSubtitle = lens === 'gender'
-    ? 'Female parliamentary share (0–50% scale)'
-    : 'Countries grouped by majority social alignment • bubbles scale with national population';
+    ? 'Female parliamentary share (0–50% scale) • Bubbles scale with national population'
+    : 'Countries grouped by majority social alignment • Bubbles scale with national population';
 
   useEffect(() => {
     const node = canvasRef.current;
@@ -132,8 +133,15 @@ export default function EuropeanComparison({ allData, genderData, year, populati
     return [...ordered, ...extras];
   }, [allData]);
 
+  const eligibleKeys = useMemo(() => {
+    return displayOrder.filter(key => {
+      const freedomYear = getCountryFreedomYear(key);
+      return !freedomYear || year >= freedomYear;
+    });
+  }, [displayOrder, year]);
+
   const populationRange = useMemo<PopulationRange>(() => {
-    const values = displayOrder
+    const values = eligibleKeys
       .map(key => populations[key])
       .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
     if (!values.length) return null;
@@ -141,10 +149,10 @@ export default function EuropeanComparison({ allData, genderData, year, populati
       min: Math.min(...values),
       max: Math.max(...values)
     };
-  }, [displayOrder, populations]);
+  }, [eligibleKeys, populations]);
 
   const bubbles = useMemo<BubbleDatum[]>(() => {
-    return displayOrder.map(key => {
+    return eligibleKeys.map(key => {
       const summary = majoritySocialCategory(allData, key, year);
       const category = normalizeSegment(summary.category);
       return {
@@ -159,10 +167,10 @@ export default function EuropeanComparison({ allData, genderData, year, populati
         population: populations[key]
       };
     });
-  }, [allData, displayOrder, populations, year, categoryPalette]);
+  }, [allData, eligibleKeys, populations, year, categoryPalette]);
 
   const genderEntries = useMemo(() => {
-    return displayOrder
+    return eligibleKeys
       .map(key => {
         const entry = getGenderYearDataForCountry(genderData, key, year);
         if (!entry) return null;
@@ -176,10 +184,10 @@ export default function EuropeanComparison({ allData, genderData, year, populati
         } as GenderBarEntry;
       })
       .filter((v): v is GenderBarEntry => v !== null);
-  }, [displayOrder, year, genderData, populations]);
+  }, [eligibleKeys, year, genderData, populations]);
 
   const populationTable = useMemo<PopulationTableData>(() => {
-    const rows = displayOrder
+    const rows = eligibleKeys
       .map(key => {
         const value = populations[key];
         if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
@@ -190,7 +198,7 @@ export default function EuropeanComparison({ allData, genderData, year, populati
       .filter((row): row is PopulationRowInfo => row !== null)
       .sort((a, b) => b.population - a.population);
     return { rows };
-  }, [displayOrder, populations]);
+  }, [eligibleKeys, populations]);
   const hasPopulationTable = populationTable.rows.length > 0;
 
   const geometry = useMemo<GeometrySnapshot>(() => {
@@ -413,7 +421,7 @@ export default function EuropeanComparison({ allData, genderData, year, populati
     };
   }, [targets, signature, centerX, centerY]);
 
-  const genderChartHeight = 480;
+  const genderChartHeight = 420;
   const legendItems = LEANING_SEGMENTS.map(segment => ({
     segment,
     color: categoryPalette[segment] || '#1a202c'
@@ -432,11 +440,15 @@ export default function EuropeanComparison({ allData, genderData, year, populati
               <Text fontSize="sm" color="gray.700" fontWeight="semibold">
                 {lens === 'gender' ? 'Gender view' : 'Political view'}
               </Text>
-              <LegendPopover
-                items={legendItems}
-                paletteOrientation={paletteOrientation}
-                setPaletteOrientation={setPaletteOrientation}
-              />
+              {lens === 'gender' ? (
+                <GenderLegendPopover />
+              ) : (
+                <LegendPopover
+                  items={legendItems}
+                  paletteOrientation={paletteOrientation}
+                  setPaletteOrientation={setPaletteOrientation}
+                />
+              )}
               {hasPopulationTable && (
                 <PopulationReferencePopover rows={populationTable.rows} formatter={populationFormatter} />
               )}
@@ -568,18 +580,18 @@ function CountryBubble({ bubble, onToggleCountry }: { bubble: BubbleWithPosition
 type GenderBarEntry = { key: CountryKey; label: string; pct: number; population?: number; flagUrl?: string; flag: string };
 
 function GenderBarComparison({ entries, width, containerWidth, populationRange, onToggleCountry }: { entries: GenderBarEntry[]; width: number; containerWidth: string | number; populationRange: PopulationRange; onToggleCountry?: (country: CountryKey) => void }) {
-  const chartHeight = 480;
+  const chartHeight = 420;
   const leftPad = 56;
   const rightPad = 56;
   const barHeight = 16;
   const deadZonePadding = 10;
   const effectiveWidth = width > 0 ? width -4 : 960;
   const usableWidth = Math.max(effectiveWidth - leftPad - rightPad, 1);
-  const bandY = chartHeight * 0.64;
-  const tickYOffset = -27;
-  const bandHalfHeight = 220;
+  const bandY = chartHeight * 0.72;
+  const tickYOffset = -24;
+  const bandHalfHeight = 180;
   const pad = 3;
-  const baseLaneOffset = 120;
+  const baseLaneOffset = 96;
 
   if (!entries.length) {
     return (
@@ -762,6 +774,53 @@ type PopulationReferencePopoverProps = {
   rows: PopulationRowInfo[];
   formatter: Intl.NumberFormat;
 };
+
+function GenderLegendPopover() {
+  return (
+    <Popover placement="bottom-end" trigger="click">
+      <PopoverTrigger>
+        <Button
+          size="sm"
+          variant="ghost"
+          border="1px solid"
+          borderColor="black"
+          borderRadius="999px"
+          leftIcon={<FaInfoCircle />}
+        >
+          Legend
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent border="2px solid" borderColor="black" borderRadius="24px" boxShadow="xl" maxW="320px">
+        <PopoverBody p={0}>
+          <Flex align="center" justify="space-between" px={4} pt={4} pb={2} borderBottom="1px solid" borderColor="gray.200">
+            <Text fontWeight="semibold" fontSize="sm" color="gray.700">
+              Gender legend
+            </Text>
+            <PopoverCloseButton position="static" transform="none" borderRadius="999px" size="sm" />
+          </Flex>
+          <Box px={4} py={3}>
+            <VStack align="stretch" spacing={3}>
+              <Box>
+                <Text fontSize="xs" color="gray.700" mb={1}>Color scale</Text>
+                <Box
+                  height="14px"
+                  borderRadius="10px"
+                  border="1px solid #f4cfe0"
+                  bg={`linear-gradient(90deg, ${genderGradientStops.start} 0%, ${genderGradientStops.end} 100%)`}
+                />
+                <Flex justify="space-between" mt={1} fontSize="xs" color="gray.700">
+                  <Text>0%</Text>
+                  <Text>50%</Text>
+                </Flex>
+              </Box>
+              <Text fontSize="xs" color="gray.700">Bubbles scale with national population.</Text>
+            </VStack>
+          </Box>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function PopulationReferencePopover({ rows, formatter }: PopulationReferencePopoverProps) {
   return (
