@@ -586,9 +586,9 @@ function GenderBarComparison({ entries, width, containerWidth, populationRange, 
   const barHeight = 16;
   const deadZonePadding = 10;
   const effectiveWidth = width > 0 ? width -4 : 960;
-  const usableWidth = Math.max(effectiveWidth - leftPad - rightPad, 1);
+  const usableWidth = Math.max(effectiveWidth - leftPad - rightPad + 2, 1);
   const bandY = chartHeight * 0.72;
-  const tickYOffset = -24;
+  const tickYOffset = -28;
   const bandHalfHeight = 180;
   const pad = 3;
   const baseLaneOffset = 96;
