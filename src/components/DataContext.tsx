@@ -1,7 +1,7 @@
 "use client";
 import { Dispatch, SetStateAction, createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { CountryKey, DataView, GenderYearData, YearData } from '@/types';
+import { CountryKey, DataView, GenderYearData, PartyNameMode, YearData } from '@/types';
 import { PaletteOrientation, getCategoryPalette } from '@/lib/colors';
 
 type DataContextValue = {
@@ -18,6 +18,8 @@ type DataContextValue = {
   populations: Partial<Record<CountryKey, number>>;
   dataView: DataView;
   setDataView: (mode: DataView)=>void;
+  partyNameMode: PartyNameMode;
+  setPartyNameMode: (mode: PartyNameMode)=>void;
   paletteOrientation: PaletteOrientation;
   setPaletteOrientation: (o: PaletteOrientation)=>void;
   categoryPalette: Record<string,string>;
@@ -39,6 +41,7 @@ export function DataProvider({ children, allData, genderData, populations }: Dat
   const [country,setCountry] = useState<CountryKey | undefined>();
   const [yearState,setYearState] = useState<number>(2018);
   const [dataView, setDataViewState] = useState<DataView>('political');
+  const [partyNameMode, setPartyNameModeState] = useState<PartyNameMode>('english');
   const [paletteOrientation, setPaletteOrientationState] = useState<PaletteOrientation>('european');
   const [comparisonSelections, setComparisonSelections] = useState<(CountryKey | null)[]>(() => createEmptyComparisonSelections());
   const router = useRouter();
@@ -71,6 +74,7 @@ export function DataProvider({ children, allData, genderData, populations }: Dat
 
   const setYear = (y:number) => setYearState(y);
   const setDataView = (mode: DataView) => setDataViewState(mode);
+  const setPartyNameMode = (mode: PartyNameMode) => setPartyNameModeState(mode);
   const setPaletteOrientation = (o: PaletteOrientation) => setPaletteOrientationState(o);
   const categoryPalette = useMemo(()=> getCategoryPalette(paletteOrientation), [paletteOrientation]);
   const currentYearData = useMemo(()=>{
@@ -108,6 +112,8 @@ export function DataProvider({ children, allData, genderData, populations }: Dat
         populations,
         dataView,
         setDataView,
+        partyNameMode,
+        setPartyNameMode,
         paletteOrientation,
         setPaletteOrientation,
         categoryPalette

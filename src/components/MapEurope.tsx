@@ -437,7 +437,7 @@ export default function MapEurope({ selected, onSelect, year, onYearChange, time
             width={`${overlayBadgeWidth}px`}
             textAlign="center"
           >
-            <Text fontWeight="semibold">European Parliamentary Visualizer</Text>
+            <Text fontWeight="semibold">The Making of a Parliament</Text>
           </Box>
           <ViewToggle width={`${overlayBadgeWidth}px`} height={38} />
           <DataLensToggle width={`${overlayBadgeWidth}px`} />

@@ -29,6 +29,7 @@ export type CountryKey =
   | 'sweden';
 
 export type DataView = 'political' | 'gender';
+export type PartyNameMode = 'english' | 'native';
 
 export type ParliamentRow = {
   Year: number;
@@ -57,6 +58,7 @@ export type YearData = {
   parties: Array<{
     acronym: string;
     englishName?: string;
+    nativeName?: string;
     votes: number; // seats or vote count
     pct: number; // of total
     color: string;

@@ -6,7 +6,7 @@ import { YearData } from '@/types';
 import { useData } from './DataContext';
 
 export default function ElectionDonut({ data }: { data?: YearData }){
-  const { categoryPalette } = useData();
+  const { categoryPalette, partyNameMode } = useData();
   const ref = useRef<SVGSVGElement>(null);
 
   const { socialSlices } = useMemo(()=>{
@@ -92,7 +92,12 @@ export default function ElectionDonut({ data }: { data?: YearData }){
       const parties = d.data.parties
         .slice()
         .sort((a:any,b:any)=> (b.votes||0) - (a.votes||0))
-        .map((p:any)=>`<span style=\"color:#ddd;display:block;text-overflow:ellipsis;overflow:hidden\">• ${p.englishName ?? p.acronym} — ${p.pct.toFixed(1)}%</span>`)
+        .map((p:any)=>{
+          const label = partyNameMode === 'native'
+            ? (p.nativeName || p.englishName || p.acronym)
+            : (p.englishName || p.nativeName || p.acronym);
+          return `<span style=\"color:#ddd;display:block;text-overflow:ellipsis;overflow:hidden\">• ${label} — ${p.pct.toFixed(1)}%</span>`;
+        })
         .join('');
       tooltip.style('opacity','1').style('width','').html(`
         <div style=\"font-weight:700;color:#fff;text-overflow:ellipsis;overflow:hidden;max-width:100%\">${header}</div>
@@ -118,7 +123,7 @@ export default function ElectionDonut({ data }: { data?: YearData }){
     // no center label per request
 
     return () => { try { tooltip.remove(); } catch {} };
-  },[socialSlices]);
+  },[socialSlices, partyNameMode]);
 
   return (
     <Box width="100%">

@@ -154,6 +154,7 @@ export function mergeYearData(country: CountryKey): YearData[] {
       const info = compassMap.get(alias || cand);
       if (info) {
         p.englishName = info.EnglishName || info.NativeName || p.acronym;
+        p.nativeName = info.NativeName || info.EnglishName || p.acronym;
         p.econ = Number.isFinite(info.EconRating) ? info.EconRating : undefined;
         p.social = Number.isFinite(info.SocialRating) ? info.SocialRating : undefined;
         p.color = info.color || p.color;

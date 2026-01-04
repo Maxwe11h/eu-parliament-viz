@@ -20,7 +20,7 @@ import { PaletteOrientation } from '@/lib/colors';
 type PartyPoint = NonNullable<YearData>['parties'][number];
 
 export default function Spectrum({ data, size = 520 }: { data?: YearData; size?: number }){
-  const { categoryPalette, paletteOrientation } = useData();
+  const { categoryPalette, paletteOrientation, partyNameMode } = useData();
   const ref = useRef<SVGSVGElement>(null);
   useEffect(()=>{
     const svg = d3.select(ref.current!);
@@ -151,9 +151,11 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
     document.body.appendChild(tooltip.node()!);
 
     shapes.on('mouseenter', function (event, d: PartyPoint){
-      const header = d.englishName ?? d.acronym;
+      const header = partyNameMode === 'native'
+        ? (d.nativeName || d.englishName || d.acronym)
+        : (d.englishName || d.nativeName || d.acronym);
       const fillColor = partyColor(d);
-        const acronymLine = d.englishName && d.englishName !== d.acronym ? `<div style="color:#bbb;font-size:11px;">${d.acronym}</div>` : '';
+        const acronymLine = d.acronym && d.acronym !== header ? `<div style="color:#bbb;font-size:11px;">${d.acronym}</div>` : '';
         const sub = `${d.socialCategory ?? 'Uncategorized'} • ${d.pct.toFixed(1)}%`;
       tooltip.style('opacity','1').style('width','').html(`
         <div style="font-weight:700;color:#fff;text-overflow:ellipsis;overflow:hidden;max-width:100%">${header}</div>
@@ -177,7 +179,7 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
     });
     // cleanup tooltip on unmount or data change
     return () => { try { tooltip.remove(); } catch {} };
-  },[data, size, categoryPalette]);
+  },[data, size, categoryPalette, partyNameMode]);
   return (
     <Box p={2} m={0}>
       <HStack align="flex-start" justify="space-between" px={3} spacing={3} mb={1}>

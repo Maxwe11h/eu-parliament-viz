@@ -162,7 +162,7 @@ export default function ComparisonView() {
       <Box px={{ base: 4, md: 6 }} py={{ base: 2, md: 3 }} borderBottom="2px solid" borderColor="black" bg="white" boxShadow="md">
         <Flex align="stretch" justify="space-between" gap={4} flexWrap="wrap">
           <Box display="flex" flexDirection="column" gap={2} flex={1} minW="260px">
-            <Heading as="h1" size="md" lineHeight="1.2">European Parliamentary Visualizer</Heading>
+            <Heading as="h1" size="md" lineHeight="1.2">The Making of a Parliament</Heading>
             <Flex align="center" gap={3} flexWrap="wrap">
               <Box
                 bg="transparent"
@@ -254,7 +254,7 @@ export default function ComparisonView() {
           mt={2}
         >
           <Box flex="1" textAlign="left">
-            <Text fontWeight="semibold" fontSize="lg" color="gray.800">Selectable Comparison</Text>
+            <Text fontWeight="semibold" fontSize="lg" color="gray.800">Panel Comparison</Text>
           </Box>
           <Button size="sm" variant="ghost" leftIcon={<FaTimes />} onClick={handleClearAll} color="gray.700" ml={2}>
             Clear all
@@ -424,7 +424,7 @@ type CountryInsightsProps = {
 };
 
 function CountryInsights({ country, data, genderData, year, allData, onClear }: CountryInsightsProps) {
-  const { categoryPalette } = useData();
+  const { categoryPalette, dataView } = useData();
   const label = getCountryLabel(country);
   const freedomYear = getCountryFreedomYear(country);
   const blockedByDemocracy = !!(freedomYear && year < freedomYear);
@@ -499,6 +499,54 @@ function CountryInsights({ country, data, genderData, year, allData, onClear }: 
     );
   }
 
+  const showGenderFirst = dataView === 'gender';
+
+  const electionSection = (
+    <Box borderBottom="2px solid" borderColor="black" px={6} py={4} display="flex" alignItems="start" justifyContent="center">
+      <ElectionDonut data={data} />
+    </Box>
+  );
+
+  const genderSection = (
+    <Box borderBottom="2px solid" borderColor="black" px={6} py={4} display="flex" flexDirection="column" gap={3} bg="white">
+      <Text fontWeight="semibold" fontSize="md">Gender representation</Text>
+      {genderEntry ? (
+        <>
+          <Box width="100%" bg="#fde4ee" borderRadius="12px" overflow="hidden" border="1px solid" borderColor="#f4cfe0" height="24px">
+            <Box height="100%" width={`${Math.min(100, Math.max(0, genderEntry.femalePct))}%`} bg="#e75480" transition="width 200ms ease" />
+          </Box>
+          <HStack justify="space-between" spacing={4} fontSize="sm">
+            <Text fontWeight="semibold" color="gray.800">Women: {genderEntry.femalePct.toFixed(1)}%</Text>
+            <Text color="gray.700">Men: {genderEntry.malePct.toFixed(1)}%</Text>
+          </HStack>
+          <Table size="sm" width="100%">
+            <Thead>
+              <Tr borderBottom="2px solid" borderColor="gray.800">
+                <Th fontSize="sm" fontWeight="bold" py={3}>Gender</Th>
+                <Th isNumeric fontSize="sm" fontWeight="bold" py={3}>Seats</Th>
+                <Th isNumeric fontSize="sm" fontWeight="bold" py={3}>%</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              <Tr bg="#fde4ee" borderBottom="1px solid" borderColor="#f4cfe0">
+                <Td fontWeight="semibold" color="#7a1035">Female</Td>
+                <Td isNumeric fontWeight="semibold" color="#7a1035">{genderEntry.female.toLocaleString()}</Td>
+                <Td isNumeric fontWeight="semibold" color="#7a1035">{genderEntry.femalePct.toFixed(1)}%</Td>
+              </Tr>
+              <Tr bg="#e3eeff">
+                <Td fontWeight="semibold" color="#103a7a">Male</Td>
+                <Td isNumeric fontWeight="semibold" color="#103a7a">{genderEntry.male.toLocaleString()}</Td>
+                <Td isNumeric fontWeight="semibold" color="#103a7a">{genderEntry.malePct.toFixed(1)}%</Td>
+              </Tr>
+            </Tbody>
+          </Table>
+        </>
+      ) : (
+        <Text fontSize="sm" color="gray.700">No gender data is available for {label}.</Text>
+      )}
+    </Box>
+  );
+
   return (
     <Box
       border="2px solid"
@@ -539,47 +587,9 @@ function CountryInsights({ country, data, genderData, year, allData, onClear }: 
         </HStack>
       </Box>
 
-      <Box borderBottom="2px solid" borderColor="black" px={6} py={4} display="flex" alignItems="start" justifyContent="center">
-        <ElectionDonut data={data} />
-      </Box>
-
-      <Box borderBottom="2px solid" borderColor="black" px={6} py={4} display="flex" flexDirection="column" gap={3} bg="white">
-        <Text fontWeight="semibold" fontSize="md">Gender representation</Text>
-        {genderEntry ? (
-          <>
-            <Box width="100%" bg="#fde4ee" borderRadius="12px" overflow="hidden" border="1px solid" borderColor="#f4cfe0" height="24px">
-              <Box height="100%" width={`${Math.min(100, Math.max(0, genderEntry.femalePct))}%`} bg="#e75480" transition="width 200ms ease" />
-            </Box>
-            <HStack justify="space-between" spacing={4} fontSize="sm">
-              <Text fontWeight="semibold" color="gray.800">Women: {genderEntry.femalePct.toFixed(1)}%</Text>
-              <Text color="gray.700">Men: {genderEntry.malePct.toFixed(1)}%</Text>
-            </HStack>
-            <Table size="sm" width="100%">
-              <Thead>
-                <Tr borderBottom="2px solid" borderColor="gray.800">
-                  <Th fontSize="sm" fontWeight="bold" py={3}>Gender</Th>
-                  <Th isNumeric fontSize="sm" fontWeight="bold" py={3}>Seats</Th>
-                  <Th isNumeric fontSize="sm" fontWeight="bold" py={3}>%</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                <Tr bg="#fde4ee" borderBottom="1px solid" borderColor="#f4cfe0">
-                  <Td fontWeight="semibold" color="#7a1035">Female</Td>
-                  <Td isNumeric fontWeight="semibold" color="#7a1035">{genderEntry.female.toLocaleString()}</Td>
-                  <Td isNumeric fontWeight="semibold" color="#7a1035">{genderEntry.femalePct.toFixed(1)}%</Td>
-                </Tr>
-                <Tr bg="#e3eeff">
-                  <Td fontWeight="semibold" color="#103a7a">Male</Td>
-                  <Td isNumeric fontWeight="semibold" color="#103a7a">{genderEntry.male.toLocaleString()}</Td>
-                  <Td isNumeric fontWeight="semibold" color="#103a7a">{genderEntry.malePct.toFixed(1)}%</Td>
-                </Tr>
-              </Tbody>
-            </Table>
-          </>
-        ) : (
-          <Text fontSize="sm" color="gray.700">No gender data is available for {label}.</Text>
-        )}
-      </Box>
+      {showGenderFirst && genderSection}
+      {electionSection}
+      {!showGenderFirst && genderSection}
 
       <Box borderBottom="2px solid" borderColor="black" px={2} py={2} bg="white">
         <Spectrum data={data} size={520} />
