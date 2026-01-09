@@ -1,8 +1,6 @@
 # EU Parliament Visualizer
 
-Interactive map and parliament composition visualization for selected European countries (France, Germany, Ireland, Italy, Portugal, Spain) spanning 1950-2025.
-
-Use this app to explore how party systems, gender balance, and ideological positions have shifted over time. The interface combines a zoomable Europe map, a hemicycle view of seats ordered along the economic axis, a party table with percentages, and a 2D political compass so you can compare parties within and across years.
+Interactive map and parliament composition visualization for European Union countries spanning 1950-2025. Use this app to explore how party systems, gender balance, and ideological positions have shifted over time.
 
 **Live site:** https://eu-parliament-viz.vercel.app/?year=2018
 

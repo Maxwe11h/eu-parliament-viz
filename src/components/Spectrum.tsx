@@ -186,7 +186,7 @@ export default function Spectrum({ data, size = 520 }: { data?: YearData; size?:
         <Box>
           <Text fontWeight="bold" lineHeight="1.1">Political Spectrum</Text>
           <Text fontSize="xs" color="gray.600" mt={0} lineHeight="1.1">
-            X-axis displays social policy alignment and Y-axis displays economic policy alignment
+            Y-axis displays social policy alignment and X-axis displays economic policy alignment
           </Text>
         </Box>
         <SpectrumInfoPopover palette={categoryPalette} paletteOrientation={paletteOrientation} />
